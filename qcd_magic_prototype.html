@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QCD Magic Prototype</title>
+  <style>
+    :root{
+      --bg:#0f1115; --panel:#171a21; --panel2:#1f2430; --text:#eef2f7;
+      --muted:#8993a4; --line:#303746; --good:#4ade80; --bad:#fb7185;
+      --red:#ff5a67; --green:#4ade80; --blue:#60a5fa;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; padding:24px;
+      background:radial-gradient(circle at top,#171b24 0,var(--bg) 55%);
+      color:var(--text); font:15px/1.4 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      display:flex; justify-content:center;
+    }
+    .app{width:min(1040px,100%)}
+    h1{font-size:22px;margin:0 0 5px}.subtitle{color:var(--muted);margin-bottom:18px}
+    .meters{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin-bottom:16px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+    .eyebrow{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;margin-bottom:8px}
+
+    /* Charge scale */
+    .charge-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+    .charge-value{font-size:34px;font-weight:800;letter-spacing:-.04em}
+    .charge-scale-wrap{padding:16px 8px 24px}
+    .charge-scale{position:relative;height:18px;border-radius:999px;background:#0d1016;border:1px solid #394254;overflow:visible;isolation:isolate}
+    .charge-scale::after{content:"";position:absolute;z-index:2;inset:-15px;border-radius:999px;pointer-events:none;opacity:0;background:radial-gradient(circle at var(--burst-position,50%) 50%,color-mix(in srgb,var(--burst-color,#fff) 72%,transparent) 0,transparent 46%)}
+    .charge-scale.celebrate::after{animation:charge-scale-flash .72s ease-out}
+    .charge-fill{position:absolute;z-index:0;top:2px;bottom:2px;border-radius:999px;background:#738099;transition:left .18s ease,width .18s ease,opacity .18s ease}
+    .charge-marker{position:absolute;z-index:3;top:50%;width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);background:#fff;border:3px solid #10131a;box-shadow:0 0 0 1px #69758a;transition:left .18s ease,background .18s ease,box-shadow .18s ease,opacity .18s ease}
+    .charge-marker.celebrate{animation:charge-marker-hit .72s cubic-bezier(.2,.8,.2,1)}
+    .charge-particle{position:absolute;z-index:4;width:4px;height:4px;border-radius:50%;pointer-events:none;opacity:0;box-shadow:0 0 7px currentColor;animation:charge-particle-burst .72s ease-out forwards}
+    .ticks{position:absolute;z-index:1;inset:-1px 0 auto 0;height:18px;pointer-events:none}
+    .tick{position:absolute;top:6px;height:5px;width:1px;background:#465064;opacity:.42;transform:translateX(-.5px)}
+    .tick.major{top:-3px;height:24px;width:2px;background:#78859d;opacity:1;transform:translateX(-1px)}
+    .scale-label{position:absolute;top:28px;transform:translateX(-50%);color:var(--muted);font-size:11px}
+    @keyframes charge-scale-flash{0%{opacity:0;transform:scaleX(.92)}28%{opacity:1}100%{opacity:0;transform:scaleX(1.05)}}
+    @keyframes charge-marker-hit{0%,100%{transform:translate(-50%,-50%) scale(1)}32%{transform:translate(-50%,-50%) scale(1.55)}58%{transform:translate(-50%,-50%) scale(.88)}}
+    @keyframes charge-particle-burst{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}18%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(var(--rot)) scale(0)}}
+
+    /* Color triangle */
+    .color-card{display:flex;flex-direction:column;align-items:center}
+    .triangle-wrap{width:100%;display:flex;justify-content:center;align-items:center;min-height:205px}
+    svg{max-width:100%;overflow:visible}
+    .tri-line{fill:rgba(255,255,255,.015);stroke:#4b566b;stroke-width:2}
+    .guide{stroke:#343d4e;stroke-width:1;stroke-dasharray:4 5}
+    .anti-guide{stroke:#2a3140;stroke-width:1;stroke-dasharray:3 6}
+    .axis-symbol{fill:none;stroke-width:5.5;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+    .axis-symbol.direct{filter:drop-shadow(0 0 4px color-mix(in srgb,currentColor 48%,transparent))}
+    .axis-symbol.inverse{stroke-dasharray:6 10;opacity:.42}
+    .axis-red{stroke:var(--red);color:var(--red)}.axis-green{stroke:var(--green);color:var(--green)}.axis-blue{stroke:var(--blue);color:var(--blue)}
+    .center-ring{fill:none;stroke:#67738a;stroke-width:1.5;stroke-dasharray:3 4}
+    .energy-cord{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;opacity:.26;pointer-events:none;transition:opacity .12s ease}
+    .cord-red{stroke:var(--red);filter:drop-shadow(0 0 4px color-mix(in srgb,var(--red) 65%,transparent))}
+    .cord-green{stroke:var(--green);filter:drop-shadow(0 0 4px color-mix(in srgb,var(--green) 65%,transparent))}
+    .cord-blue{stroke:var(--blue);filter:drop-shadow(0 0 4px color-mix(in srgb,var(--blue) 65%,transparent))}
+    .energy-cord.resonant{animation:cord-resonance .22s ease-in-out infinite alternate}
+    @keyframes cord-resonance{from{opacity:.72}to{opacity:1}}
+    #colorPoint{transition:fill .18s ease,stroke .18s ease;stroke:#0d1016;stroke-width:4;filter:drop-shadow(0 0 7px rgba(255,255,255,.25))}
+    .color-status{margin-top:-2px;color:var(--muted);font-size:13px;text-align:center}
+    .color-status.good{color:#fff;font-weight:700}
+
+    /* controls */
+    .controls{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+    button.control{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:9px 12px;cursor:pointer;font-weight:700}
+    button.control:hover{border-color:#61708b;background:#262d3a}
+    button.control.secondary{background:transparent;color:var(--muted)}
+    .cycle-note{color:var(--muted);font-size:12px;align-self:center;margin-left:4px}
+
+    .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+    .slot{min-height:112px;border:1px dashed #465064;border-radius:16px;background:rgba(255,255,255,.02);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:.15s ease}
+    .slot:hover{border-color:#6b7891;background:rgba(255,255,255,.035)}
+    .slot.empty::after{content:"Пусто";color:#5f6a7d;font-size:13px}.slot-index{position:absolute;left:10px;top:8px;color:#596477;font-size:11px}
+
+    .result-card{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:14px 16px;margin-bottom:20px}
+    .result-card.good{border-color:#66717f}.result-title{font-weight:800;font-size:17px;margin-bottom:3px}.result-card.good .result-title{color:#fff}.result-detail{color:var(--muted);font-size:13px}
+
+    .section-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;margin:0 0 9px}
+    .palette{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+    .piece{min-width:0;min-height:98px;border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:9px;cursor:pointer;transition:transform .12s ease,border-color .12s ease,background .12s ease;color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+    .piece:hover{transform:translateY(-2px);border-color:#59657c;background:#252b38}.piece:active{transform:translateY(0)}
+    .sigil{display:block;fill:none;stroke:var(--piece-color);overflow:visible;transition:transform .12s ease}
+    .sigil.magnitude-1{width:44px;height:38px}
+    .sigil.magnitude-2{width:70px;height:60px}
+    .sigil-stroke{stroke-width:5.5;stroke-linecap:round;stroke-linejoin:round}
+    .sigil.color-positive .sigil-stroke{filter:drop-shadow(0 0 5px color-mix(in srgb,var(--piece-color) 48%,transparent))}
+    .sigil.color-negative .sigil-stroke{stroke-dasharray:6 10}
+    .piece-charge{color:var(--muted);font-size:12px;line-height:1}
+    .piece:hover .sigil{transform:scale(1.06)}
+    .red{--piece-color:var(--red);color:var(--red)}.green{--piece-color:var(--green);color:var(--green)}.blue{--piece-color:var(--blue);color:var(--blue)}
+    .slot .piece{width:calc(100% - 18px);cursor:pointer}.slot .piece:hover{transform:none}
+    @media(max-width:780px){body{padding:14px}.meters{grid-template-columns:1fr}.palette{grid-template-columns:repeat(3,1fr)}.slots{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main class="app">
+  <h1>QCD Magic — sandbox</h1>
+  <div class="subtitle">Клик по компоненту → первый свободный слот. Клик по занятому слоту → удалить.</div>
+
+  <section class="meters">
+    <div id="chargeCard" class="card charge-card">
+      <div class="charge-head">
+        <div id="chargeValue" class="charge-value">0</div>
+      </div>
+      <div class="charge-scale-wrap">
+        <div id="chargeScale" class="charge-scale">
+          <div id="chargeFill" class="charge-fill"></div>
+          <div id="chargeMarker" class="charge-marker"></div>
+          <div id="ticks" class="ticks"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card color-card">
+      <div class="eyebrow" style="align-self:flex-start">Баланс символов</div>
+      <div class="triangle-wrap">
+        <svg viewBox="0 0 320 230" width="320" height="230" aria-label="Треугольник баланса символов">
+          <!-- Opposite rays make inverted-symbol motion readable. -->
+          <line class="anti-guide" x1="160" y1="125" x2="160" y2="220" />
+          <line class="anti-guide" x1="160" y1="125" x2="283" y2="54" />
+          <line class="anti-guide" x1="160" y1="125" x2="37" y2="54" />
+          <polygon class="tri-line" points="160,26 74,174 246,174" />
+          <line class="guide" x1="160" y1="125" x2="160" y2="26" />
+          <line class="guide" x1="160" y1="125" x2="74" y2="174" />
+          <line class="guide" x1="160" y1="125" x2="246" y2="174" />
+          <path id="cordPsi" class="energy-cord cord-red" />
+          <path id="cordKoppa" class="energy-cord cord-green" />
+          <path id="cordDiamond" class="energy-cord cord-blue" />
+          <circle class="center-ring" cx="160" cy="125" r="12" />
+          <g id="axisSymbols" aria-hidden="true"></g>
+          <circle id="colorPoint" cx="160" cy="125" r="9" fill="#ffffff" />
+        </svg>
+      </div>
+      <div id="colorStatus" class="color-status good">центр · символы уравновешены</div>
+    </div>
+  </section>
+
+  <div class="controls">
+    <button id="next2" class="control">Следующий 2-компонентный</button>
+    <button id="next3" class="control">Следующий 3-компонентный</button>
+    <button id="reset" class="control secondary">Сбросить всё</button>
+    <button id="toggleSound" class="control secondary" aria-pressed="true">Звук: вкл</button>
+    <span id="cycleNote" class="cycle-note"></span>
+  </div>
+
+  <section id="slots" class="slots"></section>
+
+  <section id="resultCard" class="result-card">
+    <div id="resultTitle" class="result-title">Сборка не завершена</div>
+    <div id="resultDetail" class="result-detail">Положи 2 или 3 компонента.</div>
+  </section>
+
+  <div class="section-title">12 исходных компонентов — можно брать сколько угодно</div>
+  <section id="palette" class="palette"></section>
+</main>
+
+<script>
+  const pieces = [
+    {id:'u-r',  label:'Ψ',  flavor:'u', charge:  2, color:'red',   anti:false},
+    {id:'u-g',  label:'ϟ',  flavor:'u', charge:  2, color:'green', anti:false},
+    {id:'u-b',  label:'⟡',  flavor:'u', charge:  2, color:'blue',  anti:false},
+    {id:'d-r',  label:'Ψ',  flavor:'d', charge: -1, color:'red',   anti:false},
+    {id:'d-g',  label:'ϟ',  flavor:'d', charge: -1, color:'green', anti:false},
+    {id:'d-b',  label:'⟡',  flavor:'d', charge: -1, color:'blue',  anti:false},
+    {id:'au-r', label:'Ψ', flavor:'u', charge: -2, color:'red',   anti:true},
+    {id:'au-g', label:'ϟ', flavor:'u', charge: -2, color:'green', anti:true},
+    {id:'au-b', label:'⟡', flavor:'u', charge: -2, color:'blue',  anti:true},
+    {id:'ad-r', label:'Ψ', flavor:'d', charge:  1, color:'red',   anti:true},
+    {id:'ad-g', label:'ϟ', flavor:'d', charge:  1, color:'green', anti:true},
+    {id:'ad-b', label:'⟡', flavor:'d', charge:  1, color:'blue',  anti:true},
+  ];
+
+  const byId = Object.fromEntries(pieces.map(p => [p.id,p]));
+  let slots = [null,null,null];
+  let cycle2 = -1, cycle3 = -1;
+  let previousChargeThirds = null;
+  let previousChargeHadComponents = false;
+  let chargeCelebrationTimer = 0;
+
+  // One canonical symbol realization per physical recipe.
+  // Symbol permutations are the same physical recipe, so "Next" does not repeat them.
+  const recipes2 = [
+    {ids:['u-r','au-r'], label:'+2/3 · -2/3'},
+    {ids:['u-r','ad-r'], label:'+2/3 · +1/3'},
+    {ids:['d-r','au-r'], label:'-1/3 · -2/3'},
+    {ids:['d-r','ad-r'], label:'-1/3 · +1/3'}
+  ];
+  const recipes3 = [
+    {ids:['u-r','u-g','u-b'], label:'+2/3 · +2/3 · +2/3'},
+    {ids:['u-r','u-g','d-b'], label:'+2/3 · +2/3 · -1/3'},
+    {ids:['u-r','d-g','d-b'], label:'+2/3 · -1/3 · -1/3'},
+    {ids:['d-r','d-g','d-b'], label:'-1/3 · -1/3 · -1/3'},
+    {ids:['au-r','au-g','au-b'], label:'-2/3 · -2/3 · -2/3'},
+    {ids:['au-r','au-g','ad-b'], label:'-2/3 · -2/3 · +1/3'},
+    {ids:['au-r','ad-g','ad-b'], label:'-2/3 · +1/3 · +1/3'},
+    {ids:['ad-r','ad-g','ad-b'], label:'+1/3 · +1/3 · +1/3'}
+  ];
+
+  function fractionText(n){
+    if(n===0) return '0';
+    if(n%3===0) return (n>0?'+':'') + String(n/3);
+    const sign=n<0?'−':'+'; const a=Math.abs(n);
+    if(a<3) return `${sign}${a}/3`;
+    return `${sign}${Math.floor(a/3)} ${a%3}/3`;
+  }
+
+  const sigilPaths={
+    red:'M48 68 V14 M48 40 C34 40 27 30 27 15 M48 40 C62 40 69 30 69 15',
+    green:'M59 10 L36 34 L53 34 L39 69 L65 31 L49 31',
+    blue:'M48 9 C46 25 36 37 21 40 C36 43 46 55 48 71 C50 55 60 43 75 40 C60 37 50 25 48 9 Z'
+  };
+
+  function renderAxisSymbols(){
+    const symbols=[
+      {color:'red',x:160,y:14,scale:.3,inverse:false},
+      {color:'green',x:58,y:191,scale:.3,inverse:false},
+      {color:'blue',x:262,y:191,scale:.3,inverse:false},
+      {color:'red',x:160,y:216,scale:.26,inverse:true},
+      {color:'green',x:289,y:48,scale:.26,inverse:true},
+      {color:'blue',x:31,y:48,scale:.26,inverse:true}
+    ];
+    document.getElementById('axisSymbols').innerHTML=symbols.map(symbol=>{
+      const tx=symbol.x-48*symbol.scale,ty=symbol.y-40*symbol.scale;
+      return `<path class="axis-symbol axis-${symbol.color} ${symbol.inverse?'inverse':'direct'}" d="${sigilPaths[symbol.color]}" transform="translate(${tx} ${ty}) scale(${symbol.scale})" />`;
+    }).join('');
+  }
+
+  function pieceHTML(p){
+    const colorClass=p.anti?'color-negative':'color-positive';
+    const strokeLabel=p.anti?'пунктирный':'сплошной';
+    return `<button class="piece ${p.color} ${p.anti?'anti':''}" type="button" data-id="${p.id}" aria-label="${strokeLabel} ${p.label}, ${fractionText(p.charge)}">
+      <svg class="sigil magnitude-${Math.abs(p.charge)} ${colorClass}" viewBox="0 0 96 80" aria-hidden="true" focusable="false">
+        <path class="sigil-stroke" d="${sigilPaths[p.color]}" />
+      </svg>
+      <span class="piece-charge">${fractionText(p.charge)}</span>
+    </button>`;
+  }
+
+  function renderPalette(){
+    const el=document.getElementById('palette'); el.innerHTML=pieces.map(pieceHTML).join('');
+    el.querySelectorAll('.piece').forEach(btn=>btn.addEventListener('click',()=>addPiece(btn.dataset.id)));
+  }
+
+  function renderSlots(){
+    const el=document.getElementById('slots');
+    el.innerHTML=slots.map((id,i)=> id
+      ? `<div class="slot" data-slot="${i}"><div class="slot-index">${i+1}</div>${pieceHTML(byId[id])}</div>`
+      : `<div class="slot empty" data-slot="${i}"><div class="slot-index">${i+1}</div></div>`).join('');
+    el.querySelectorAll('.slot').forEach(s=>s.addEventListener('click',()=>removePiece(Number(s.dataset.slot))));
+  }
+
+  function totalThirds(){return slots.reduce((s,id)=>s+(id?byId[id].charge:0),0)}
+
+  function celebrateCharge(pct,color){
+    const scale=document.getElementById('chargeScale');
+    const marker=document.getElementById('chargeMarker');
+    scale.querySelectorAll('.charge-particle').forEach(particle=>particle.remove());
+    scale.style.setProperty('--burst-position',`${pct}%`);
+    scale.style.setProperty('--burst-color',color);
+    scale.classList.remove('celebrate');marker.classList.remove('celebrate');
+    void scale.offsetWidth;
+    scale.classList.add('celebrate');marker.classList.add('celebrate');
+    for(let i=0;i<18;i++){
+      const angle=Math.PI*2*i/18+(Math.random()-.5)*.22;
+      const distance=24+Math.random()*34;
+      const particle=document.createElement('span');
+      particle.className='charge-particle';
+      particle.style.left=`${pct}%`;particle.style.top='50%';
+      particle.style.color=i%4===0?'#ffffff':color;
+      particle.style.background='currentColor';
+      particle.style.width=`${2+Math.random()*4}px`;particle.style.height=particle.style.width;
+      particle.style.setProperty('--dx',`${Math.cos(angle)*distance}px`);
+      particle.style.setProperty('--dy',`${Math.sin(angle)*distance}px`);
+      particle.style.setProperty('--rot',`${Math.random()*240-120}deg`);
+      scale.appendChild(particle);
+      particle.addEventListener('animationend',()=>particle.remove(),{once:true});
+    }
+    clearTimeout(chargeCelebrationTimer);
+    chargeCelebrationTimer=setTimeout(()=>{scale.classList.remove('celebrate');marker.classList.remove('celebrate')},760);
+    playIntegerChime();
+  }
+
+  function renderCharge(){
+    const n=totalThirds(), valid=n%3===0;
+    const hasComponents=slots.some(Boolean);
+    document.getElementById('chargeValue').textContent=fractionText(n);
+
+    // Scale runs from -2 to +2 = -6/3 to +6/3.
+    const min=-6,max=6,clamped=Math.max(min,Math.min(max,n));
+    const pct=(clamped-min)/(max-min)*100;
+    const zeroPct=(0-min)/(max-min)*100;
+    const left=Math.min(pct,zeroPct), width=Math.abs(pct-zeroPct);
+    const {x,y}=colorVector(),mag=Math.hypot(x,y);
+    const pointColor=mixPointColor(x,y,mag);
+    const fill=document.getElementById('chargeFill');
+    const marker=document.getElementById('chargeMarker');
+    const markerColor=valid?'#ffffff':pointColor;
+    fill.style.left=`${left}%`;fill.style.width=`${width}%`;fill.style.opacity=valid?'.9':'.2';
+    marker.style.left=`${pct}%`;marker.style.background=markerColor;marker.style.opacity=valid?'1':'.28';
+    marker.style.boxShadow=valid?'0 0 0 1px #69758a,0 0 12px rgba(255,255,255,.75)':'0 0 0 1px #69758a';
+    const arrivedAtInteger=previousChargeThirds!==null&&valid&&hasComponents&&(n!==previousChargeThirds||!previousChargeHadComponents);
+    previousChargeThirds=n;previousChargeHadComponents=hasComponents;
+    if(arrivedAtInteger) celebrateCharge(pct,markerColor);
+  }
+
+  function renderTicks(){
+    const el=document.getElementById('ticks'); let html='';
+    for(let n=-6;n<=6;n++){
+      const pct=(n+6)/12*100; const major=n%3===0;
+      html+=`<span class="tick ${major?'major':''}" style="left:${pct}%"></span>`;
+      if(major) html+=`<span class="scale-label" style="left:${pct}%">${n/3>0?'+':''}${n/3}</span>`;
+    }
+    el.innerHTML=html;
+  }
+
+  const vec={
+    red:{x:0,y:-1},
+    green:{x:-Math.sqrt(3)/2,y:.5},
+    blue:{x:Math.sqrt(3)/2,y:.5}
+  };
+  const focusCenter={x:160,y:125};
+  const cordDefs=[
+    {id:'cordPsi',x:160,y:26,phase:0},
+    {id:'cordKoppa',x:74,y:174,phase:2.1},
+    {id:'cordDiamond',x:246,y:174,phase:4.2}
+  ].map(def=>{
+    const restLength=Math.hypot(focusCenter.x-def.x,focusCenter.y-def.y);
+    return {...def,el:document.getElementById(def.id),restLength,resonanceLength:restLength+6};
+  });
+  const focusMotion={
+    startX:focusCenter.x,startY:focusCenter.y,
+    targetX:focusCenter.x,targetY:focusCenter.y,
+    startedAt:-Infinity,duration:180
+  };
+  let cordAnimationFrame=0;
+  let soundEnabled=true;
+  let cordAudio=null;
+  const cordToneFrequencies=[146.83,174.61,220]; // D minor: D3, F3, A3.
+
+  function ensureCordAudio(){
+    if(!soundEnabled) return;
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+    if(!AudioContextClass) return;
+    if(!cordAudio){
+      const context=new AudioContextClass();
+      const master=context.createGain();
+      master.gain.value=.24;
+      master.connect(context.destination);
+      const tones=cordDefs.map((def,index)=>{
+        const oscillator=context.createOscillator();
+        const filter=context.createBiquadFilter();
+        const gain=context.createGain();
+        oscillator.type='triangle';
+        oscillator.frequency.value=cordToneFrequencies[index];
+        filter.type='lowpass';filter.frequency.value=1000;filter.Q.value=.7;
+        gain.gain.value=0;
+        oscillator.connect(filter);filter.connect(gain);
+        if(context.createStereoPanner){
+          const panner=context.createStereoPanner();
+          panner.pan.value=[0,-.65,.65][index];
+          gain.connect(panner);panner.connect(master);
+        }else{
+          gain.connect(master);
+        }
+        oscillator.start();
+        return {oscillator,gain};
+      });
+      cordAudio={context,tones,master};
+    }
+    if(cordAudio.context.state==='suspended') cordAudio.context.resume();
+  }
+
+  function playIntegerChime(){
+    if(!soundEnabled) return;
+    ensureCordAudio();
+    if(!cordAudio) return;
+    const {context,master}=cordAudio;
+    const startedAt=context.currentTime+.015;
+    [293.66,349.23,440].forEach((frequency,index)=>{
+      const oscillator=context.createOscillator();
+      const gain=context.createGain();
+      const noteStart=startedAt+index*.045;
+      oscillator.type='sine';oscillator.frequency.value=frequency;
+      gain.gain.setValueAtTime(.0001,noteStart);
+      gain.gain.exponentialRampToValueAtTime(.13,noteStart+.025);
+      gain.gain.exponentialRampToValueAtTime(.0001,noteStart+.58);
+      oscillator.connect(gain);gain.connect(master);
+      oscillator.start(noteStart);oscillator.stop(noteStart+.62);
+    });
+  }
+
+  function silenceCordAudio(immediate=false){
+    if(!cordAudio) return;
+    const now=cordAudio.context.currentTime;
+    cordAudio.tones.forEach(tone=>{
+      tone.gain.gain.cancelScheduledValues(now);
+      if(immediate) tone.gain.gain.setValueAtTime(0,now);
+      else tone.gain.gain.setTargetAtTime(0,now,.025);
+    });
+  }
+
+  function updateCordAudio(time){
+    if(!cordAudio||!soundEnabled) return;
+    const now=cordAudio.context.currentTime;
+    cordDefs.forEach((def,index)=>{
+      const active=slots.some(Boolean)&&def.el.dataset.resonant==='true';
+      const pulse=.82+.18*Math.abs(Math.sin(time*.018+def.phase));
+      const level=active ? .034*pulse : 0;
+      const tone=cordAudio.tones[index];
+      const frequency=cordToneFrequencies[index]+Math.sin(time*.008+def.phase)*.6;
+      tone.gain.gain.setTargetAtTime(level,now,active ? .025 : .055);
+      tone.oscillator.frequency.setTargetAtTime(frequency,now,.04);
+    });
+  }
+
+  function currentFocusPosition(now){
+    const t=Math.max(0,Math.min(1,(now-focusMotion.startedAt)/focusMotion.duration));
+    const eased=1-Math.pow(1-t,3);
+    return {
+      x:focusMotion.startX+(focusMotion.targetX-focusMotion.startX)*eased,
+      y:focusMotion.startY+(focusMotion.targetY-focusMotion.startY)*eased,
+      moving:t<1
+    };
+  }
+
+  function cordPath(def,point,time,resonant){
+    if(!resonant) return `M ${def.x} ${def.y} L ${point.x} ${point.y}`;
+    const dx=point.x-def.x,dy=point.y-def.y,length=Math.max(1,Math.hypot(dx,dy));
+    const normalX=-dy/length,normalY=dx/length;
+    const amplitude=Math.min(4,1.8+length*.012);
+    const segments=12;
+    let path=`M ${def.x} ${def.y}`;
+    for(let i=1;i<=segments;i++){
+      const t=i/segments;
+      const fundamental=Math.sin(Math.PI*t)*Math.sin(time*.07+def.phase);
+      const harmonic=Math.sin(Math.PI*2*t)*Math.sin(time*.11+def.phase)*.22;
+      const offset=amplitude*(fundamental+harmonic);
+      path+=` L ${def.x+dx*t+normalX*offset} ${def.y+dy*t+normalY*offset}`;
+    }
+    return path;
+  }
+
+  function animateEnergyCords(time){
+    const pointPosition=currentFocusPosition(time);
+    const point=document.getElementById('colorPoint');
+    point.setAttribute('cx',pointPosition.x);
+    point.setAttribute('cy',pointPosition.y);
+    const displacement=Math.hypot(pointPosition.x-focusCenter.x,pointPosition.y-focusCenter.y);
+    const displacementRatio=Math.min(1,displacement/(58*3));
+    let anyResonant=false;
+    cordDefs.forEach(def=>{
+      const length=Math.hypot(pointPosition.x-def.x,pointPosition.y-def.y);
+      const excess=Math.max(0,length-def.restLength);
+      const resonant=length<def.resonanceLength;
+      const tension=excess/def.restLength;
+      const baseThickness=Math.max(2.5,4-displacementRatio*1.25);
+      const thickness=resonant?baseThickness:baseThickness/3;
+      anyResonant ||= resonant;
+      def.el.classList.toggle('resonant',resonant);
+      def.el.dataset.tension=String(tension);
+      def.el.dataset.resonant=String(resonant);
+      def.el.style.strokeWidth=String(thickness);
+      def.el.setAttribute('d',cordPath(def,pointPosition,time,resonant));
+    });
+    updateCordAudio(time);
+    if(pointPosition.moving||anyResonant){
+      cordAnimationFrame=requestAnimationFrame(animateEnergyCords);
+    }else{
+      cordAnimationFrame=0;
+    }
+  }
+
+  function setFocusTarget(x,y){
+    const now=performance.now();
+    const current=currentFocusPosition(now);
+    focusMotion.startX=current.x;focusMotion.startY=current.y;
+    focusMotion.targetX=x;focusMotion.targetY=y;focusMotion.startedAt=now;
+    if(!cordAnimationFrame) cordAnimationFrame=requestAnimationFrame(animateEnergyCords);
+  }
+
+  function colorVector(){
+    let x=0,y=0;
+    slots.filter(Boolean).forEach(id=>{const p=byId[id],sgn=p.anti?-1:1;x+=vec[p.color].x*sgn;y+=vec[p.color].y*sgn;});
+    return {x,y};
+  }
+  function mixPointColor(x,y,mag){
+    if(mag<1e-6) return '#ffffff';
+    // Positive projections onto the three symbol axes determine the point tint.
+    const dots={}; let sum=0;
+    for(const c of ['red','green','blue']){dots[c]=Math.max(0,x*vec[c].x+y*vec[c].y);sum+=dots[c];}
+    if(sum<1e-6) return '#ffffff';
+    const rgb={red:[255,90,103],green:[74,222,128],blue:[96,165,250]};
+    const out=[0,0,0];
+    for(const c of ['red','green','blue']) for(let i=0;i<3;i++) out[i]+=rgb[c][i]*dots[c]/sum;
+    const intensity=Math.min(1,mag/2);
+    return `rgb(${out.map(v=>Math.round(255+(v-255)*intensity)).join(',')})`;
+  }
+  function renderColor(){
+    const {x,y}=colorVector(); const mag=Math.hypot(x,y);
+    const scale=58; // one symbol contribution
+    const px=focusCenter.x+x*scale, py=focusCenter.y+y*scale;
+    const point=document.getElementById('colorPoint');
+    const resonanceEnabled=slots.some(Boolean);
+    if(!resonanceEnabled) silenceCordAudio(true);
+    setFocusTarget(px,py);
+    point.setAttribute('fill',mixPointColor(x,y,mag));
+    const status=document.getElementById('colorStatus');
+    const resonanceCount=cordDefs.filter(def=>Math.hypot(px-def.x,py-def.y)<def.resonanceLength).length;
+    const good=resonanceEnabled&&resonanceCount===3;
+    status.classList.toggle('good',good);
+    status.textContent=!resonanceEnabled?'струны вибрируют · добавь знак для звука':good?'полный аккорд · 3/3':`смещение фокуса · ${mag.toFixed(1)} · резонанс ${resonanceCount}/3`;
+  }
+
+  function analyzeCombination(){
+    const chosen=slots.filter(Boolean).map(id=>byId[id]);
+    if(chosen.length<2) return {valid:false,title:'Сборка не завершена',detail:'Положи 2 или 3 компонента.'};
+
+    if(chosen.length===2){
+      const qs=chosen.filter(p=>!p.anti), as=chosen.filter(p=>p.anti);
+      if(qs.length!==1||as.length!==1) return {valid:false,title:'Не сошлось',detail:'Для 2 компонентов нужны положительный и отрицательный символы.'};
+      const q=qs[0],a=as[0];
+      if(q.color!==a.color) return {valid:false,title:'Не сошлось по символам',detail:'Нужны сплошная и пунктирная версии одного символа.'};
+      const key=q.flavor+a.flavor;
+      const names={
+        ud:'π⁺', du:'π⁻',
+        uu:'нейтральный мезонный компонент (π⁰ / η / ρ⁰ / ω …)',
+        dd:'нейтральный мезонный компонент (π⁰ / η / ρ⁰ / ω …)'
+      };
+      return {valid:true,title:'Сошлось · мезон',detail:`Реальный аналог: ${names[key]}.`};
+    }
+
+    const allQ=chosen.every(p=>!p.anti), allA=chosen.every(p=>p.anti);
+    if(!allQ&&!allA) return {valid:false,title:'Не сошлось',detail:'Для 3 компонентов нужны либо 3 положительных, либо 3 отрицательных символа.'};
+    if(new Set(chosen.map(p=>p.color)).size!==3) return {valid:false,title:'Не сошлось по символам',detail:allQ?'Нужны сплошные Ψ + ϟ + ⟡.':'Нужны пунктирные Ψ + ϟ + ⟡.'};
+
+    const uc=chosen.filter(p=>p.flavor==='u').length;
+    if(allQ){
+      const names={3:'Δ⁺⁺',2:'протон p или Δ⁺',1:'нейтрон n или Δ⁰',0:'Δ⁻'};
+      return {valid:true,title:'Сошлось · барион',detail:`Реальный аналог: ${names[uc]}.`};
+    }
+    const names={3:'анти-Δ⁻⁻',2:'антипротон p̄ или анти-Δ⁻',1:'антинейтрон n̄ или анти-Δ⁰',0:'анти-Δ⁺'};
+    return {valid:true,title:'Сошлось · антибарион',detail:`Реальный аналог: ${names[uc]}.`};
+  }
+
+  function renderResult(){
+    const r=analyzeCombination();
+    document.getElementById('resultTitle').textContent=r.title;
+    document.getElementById('resultDetail').textContent=r.detail;
+    document.getElementById('resultCard').classList.toggle('good',r.valid);
+  }
+
+  function render(){renderSlots();renderCharge();renderColor();renderResult()}
+  function addPiece(id){const i=slots.findIndex(x=>x===null);if(i<0)return;slots[i]=id;render()}
+  function removePiece(i){slots[i]=null;render()}
+  function setRecipe(recipe,kind,index,total){slots=[...recipe.ids];while(slots.length<3)slots.push(null);document.getElementById('cycleNote').textContent=`${kind}: ${index+1}/${total} · ${recipe.label}`;render()}
+
+  document.getElementById('next2').addEventListener('click',()=>{cycle2=(cycle2+1)%recipes2.length;setRecipe(recipes2[cycle2],'2 компонента',cycle2,recipes2.length)});
+  document.getElementById('next3').addEventListener('click',()=>{cycle3=(cycle3+1)%recipes3.length;setRecipe(recipes3[cycle3],'3 компонента',cycle3,recipes3.length)});
+  document.getElementById('reset').addEventListener('click',()=>{slots=[null,null,null];cycle2=-1;cycle3=-1;document.getElementById('cycleNote').textContent='';render()});
+  document.getElementById('toggleSound').addEventListener('click',event=>{
+    soundEnabled=!soundEnabled;
+    event.currentTarget.textContent=soundEnabled?'Звук: вкл':'Звук: выкл';
+    event.currentTarget.setAttribute('aria-pressed',String(soundEnabled));
+    if(soundEnabled){ensureCordAudio();if(!cordAnimationFrame)cordAnimationFrame=requestAnimationFrame(animateEnergyCords)}else silenceCordAudio();
+  });
+  document.addEventListener('pointerdown',ensureCordAudio);
+  document.addEventListener('keydown',ensureCordAudio);
+
+  renderTicks(); renderPalette(); renderAxisSymbols(); render();
+</script>
+</body>
+</html>
