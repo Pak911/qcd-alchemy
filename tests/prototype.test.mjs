@@ -39,12 +39,25 @@ afterEach(async () => {
 const piece = id => page.locator(`.piece[data-id="${id}"]`);
 const state = () => page.locator('#chamber').getAttribute('data-state');
 const selected = () => page.evaluate(() => [...slots]);
+const socketTarget = id => page.locator(`.socket-target[data-insert="${id}"]`);
+
+async function socketPoint(target) {
+  await target.scrollIntoViewIfNeeded();
+  const box = await target.boundingBox();
+  const large = await target.evaluate(node => node.classList.contains('socket-target-large'));
+  return { x: box.x + box.width / 2, y: box.y + box.height * (large ? .12 : .5) };
+}
 
 describe('QCD rules and interaction', () => {
   it('opens directly from disk without a server or an initial success state', async () => {
+    assert.equal(await page.title(), 'Созвучие · QCD');
+    assert.equal(await page.locator('h1').textContent(), 'Созвучие');
+    assert.equal(await page.locator('.brand-caption').textContent(), 'Разные знаки. Общий центр.');
+    assert.deepEqual(await page.locator('.theme-switch button').allTextContents(), ['Алхимия', 'Схема']);
     assert.equal(await page.locator('.piece').count(), 12);
     assert.equal(await page.locator('.socket').count(), 6);
-    assert.equal(await page.locator('.socket:disabled').count(), 6);
+    assert.equal(await page.locator('.socket.empty').count(), 6);
+    assert.equal(await page.locator('.socket-target:enabled').count(), 12);
     assert.equal(await state(), 'empty');
     assert.equal(await page.locator('#chargeValue').textContent(), '0');
     assert.equal(await page.locator('details').getAttribute('open'), null);
@@ -64,6 +77,129 @@ describe('QCD rules and interaction', () => {
     await piece('ad-r').hover();
     assert.equal(await page.locator('#previewRing').isVisible(), true);
     assert.equal(await page.locator('#previewDot').getAttribute('cy'), '294');
+  });
+
+  it('inserts the correct stone through each of the twelve circular hit regions', async () => {
+    const inventory = await page.evaluate(() => pieces.map(p => ({ id: p.id, axis: `${p.color}-${p.anti}`, size: Math.abs(p.charge) === 2 ? 'large' : 'small' })));
+    for (const theme of ['artifact', 'instrument']) {
+      await page.locator(`[data-theme-choice="${theme}"]`).click();
+      for (const item of inventory) {
+        const point = await socketPoint(socketTarget(item.id));
+        await page.mouse.move(point.x, point.y);
+        assert.equal(await page.locator(`[data-axis="${item.axis}"]`).getAttribute('data-preview-size'), item.size);
+        assert.deepEqual(await selected(), [null, null, null], 'Hovering a socket does not place a stone');
+        await page.mouse.click(point.x, point.y);
+        assert.deepEqual(await selected(), [item.id, null, null]);
+        assert.equal(await piece(item.id).isVisible(), false);
+        assert.equal(await page.locator('.capacity-dot:not(.spent)').count(), 2);
+        assert.equal(await page.locator('#preview').isVisible(), false);
+        await page.locator(`.socket[data-piece="${item.id}"]`).click();
+        assert.equal(await piece(item.id).isVisible(), true);
+        assert.equal(await page.locator('.socket-target:enabled').count(), 12);
+      }
+    }
+  });
+
+  it('supports keyboard insertion and prevents a fourth stone through the circle', async () => {
+    for (const id of ['u-r', 'ad-r', 'u-g']) {
+      await socketTarget(id).focus();
+      await page.keyboard.press(id === 'ad-r' ? 'Space' : 'Enter');
+      assert.equal(await page.locator(`.socket[data-piece="${id}"]`).evaluate(node => document.activeElement === node), true);
+    }
+    assert.deepEqual(await selected(), ['u-r', 'ad-r', 'u-g']);
+    assert.equal(await page.locator('.socket-target:enabled').count(), 0);
+    const point = await socketPoint(socketTarget('u-b'));
+    await page.mouse.move(point.x, point.y);
+    assert.equal(await page.locator('#preview').isVisible(), false);
+    await page.mouse.click(point.x, point.y);
+    assert.deepEqual(await selected(), ['u-r', 'ad-r', 'u-g']);
+    await page.locator('.socket[data-piece="ad-r"]').click();
+    assert.equal(await socketTarget('u-b').isEnabled(), true);
+    await socketTarget('u-b').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await state(), 'balanced');
+    await page.locator('#reset').click();
+    assert.equal(await page.locator('.socket-target:enabled').count(), 12);
+  });
+
+  it('highlights only the matching sub-socket for inventory hover', async () => {
+    const axis = page.locator('[data-axis="red-false"]');
+    const baseAppearance = () => axis.evaluate(node => ({
+      opacity: getComputedStyle(node).opacity,
+      strokes: [...node.querySelectorAll('.socket-outlines path')].map(path => getComputedStyle(path).stroke)
+    }));
+    const checkHighlight = async size => {
+      assert.equal(await axis.getAttribute('data-preview-size'), size);
+      const shape = await axis.evaluate((node, size) => {
+        const glow = node.querySelector('.socket-highlight');
+        const actual = glow.querySelector('path').getBoundingClientRect();
+        const expected = node.querySelector(`.socket-outline-${size}`).getBoundingClientRect();
+        return { opacity: getComputedStyle(glow).opacity, fill: getComputedStyle(glow).fill, dx: actual.x - expected.x, dy: actual.y - expected.y, dw: actual.width - expected.width, dh: actual.height - expected.height };
+      }, size);
+      assert.equal(shape.opacity, '1');
+      assert.equal(shape.fill, 'none');
+      assert.ok(['dx', 'dy', 'dw', 'dh'].every(key => Math.abs(shape[key]) < .1), 'Only the chosen outline receives the glow');
+    };
+    for (const theme of ['artifact', 'instrument']) {
+      await page.locator(`[data-theme-choice="${theme}"]`).click();
+      for (const [id, size] of [['u-r', 'large'], ['d-r', 'small']]) {
+        const before = await baseAppearance();
+        await piece(id).hover();
+        await checkHighlight(size);
+        assert.deepEqual(await baseAppearance(), before, 'The whole socket and the other contour do not brighten');
+        await page.locator('.field-wrap').screenshot({ path: path.join(artifacts, `socket-preview-${theme}-${size}.png`) });
+        await page.keyboard.press('Escape');
+        assert.equal(await page.locator('[data-preview-size]').count(), 0);
+      }
+      await piece('d-r').click();
+      await piece('u-r').hover();
+      await checkHighlight('large');
+      await page.locator('#reset').click();
+      await piece('u-r').click();
+      await piece('d-r').hover();
+      await checkHighlight('small');
+      await page.locator('#reset').click();
+    }
+  });
+
+  it('spends and restores the three capacity lights in both visual modes', async () => {
+    const checkFree = async free => {
+      assert.equal(await page.locator('.capacity-dot').count(), 3);
+      assert.equal(await page.locator('.capacity-dot:not(.spent)').count(), free);
+      assert.equal(await page.locator('.capacity-dot.spent').count(), 3 - free);
+      assert.equal(await page.locator('#capacity').getAttribute('aria-label'), `Свободно мест: ${free} из 3`);
+    };
+    for (const theme of ['artifact', 'instrument']) {
+      await page.locator(`[data-theme-choice="${theme}"]`).click();
+      if (await page.locator('#reset').isEnabled()) await page.locator('#reset').click();
+      await checkFree(3);
+      await piece('u-r').hover();
+      await checkFree(3);
+      for (const [index, id] of ['u-r', 'u-g', 'u-b'].entries()) {
+        await piece(id).click();
+        await checkFree(2 - index);
+      }
+      await piece('d-r').click({ force: true });
+      await checkFree(0);
+      await page.locator('.socket[data-piece="u-g"]').click();
+      await checkFree(1);
+      await piece('u-g').click();
+      await checkFree(0);
+      await page.locator('#reset').click();
+      await checkFree(3);
+      await page.locator('#next2').click();
+      await checkFree(1);
+      await page.locator('#next3').click();
+      await checkFree(0);
+      for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 1000 });
+        const dots = await page.locator('#capacity').boundingBox();
+        const field = await page.locator('#field').boundingBox();
+        assert.ok(dots.y + dots.height <= field.y + 1, 'Capacity lights stay above the circle');
+        assert.ok(Math.abs(dots.x + dots.width / 2 - field.x - field.width / 2) < 1, 'Capacity lights stay centered');
+        await checkFree(0);
+      }
+    }
   });
 
   it('closes an opposite-colour pair and dims the unused directions', async () => {
@@ -325,8 +461,13 @@ describe('Responsive presentation', () => {
         field: box('#field'), sockets: [...document.querySelectorAll('.orbit-slot')].map(node => node.getBoundingClientRect().toJSON())
       };
     });
-    assert.ok(Math.abs(layout.small.width / layout.big.width - .76) < .01);
-    assert.ok(Math.abs(layout.inner.width / layout.outer.width - .76) < .01);
+    assert.ok(Math.abs(layout.small.width / layout.big.width - .57) < .01);
+    assert.ok(Math.abs(layout.inner.width / layout.outer.width - .57) < .01);
+    assert.equal(await page.locator('#palette .magnitude-1 .stone-bevel, #palette .magnitude-1 .stone-edge, #palette .magnitude-1 .stone-face').count(), 0);
+    assert.equal(await page.locator('.stone-bevel, .stone-edge').count(), 0);
+    assert.equal(await page.locator('#palette .magnitude-2 .stone-face').count(), 6);
+    assert.ok(await page.locator('#palette .rune-stone').evaluateAll(nodes => nodes.every(node => getComputedStyle(node).filter === 'none')));
+    assert.ok(await page.locator('#palette .stone-face').evaluateAll(nodes => nodes.every(node => getComputedStyle(node).fill === 'none')));
     assert.equal(await page.locator('.tray').count(), 0);
     for (const socket of layout.sockets) {
       const x = (socket.x + socket.width / 2 - layout.field.x) / layout.field.width * 640;
@@ -337,6 +478,26 @@ describe('Responsive presentation', () => {
     assert.equal(await page.locator('.examples .dice').count(), 3);
     assert.equal(await piece('u-r').locator('.rune-mark').count(), 2);
     assert.equal(await piece('d-r').locator('.rune-mark').count(), 1);
+  });
+
+  it('centers the trident in large and small stones in both themes', async () => {
+    for (const theme of ['artifact', 'instrument']) {
+      await page.locator(`[data-theme-choice="${theme}"]`).click();
+      const positions = await page.locator('#palette .piece.red').evaluateAll(nodes => nodes.map(node => {
+        const glyph = node.querySelector('.rune-glyph').getBoundingClientRect();
+        const stone = node.querySelector('.rune-frame').getBoundingClientRect();
+        return {
+          x: (glyph.x + glyph.width / 2 - stone.x) / stone.width,
+          y: (glyph.y + glyph.height / 2 - stone.y) / stone.height
+        };
+      }));
+      assert.equal(positions.length, 4);
+      for (const position of positions) {
+        assert.ok(Math.abs(position.x - .5) < .01, 'Trident is horizontally centered');
+        assert.ok(position.y >= .5 && position.y <= .53, 'Trident sits slightly below the geometric center');
+      }
+      await page.locator('#palette .family.red').screenshot({ path: path.join(artifacts, `trident-${theme}.png`) });
+    }
   });
 
   it('enlarges the field, stones, slots, and text together on a large screen', async () => {
@@ -425,6 +586,17 @@ describe('Responsive presentation', () => {
       assert.equal(await mobile.locator('.piece[data-id="u-r"]').isVisible(), true);
       assert.equal(await mobile.locator('.socket.filled').count(), 1);
       assert.equal(await mobile.locator('#chamber').getAttribute('data-state'), 'seeking');
+      for (const theme of ['artifact', 'instrument']) {
+        await mobile.locator(`[data-theme-choice="${theme}"]`).tap();
+        await mobile.locator('#reset').tap();
+        for (const id of ['u-r', 'ad-r']) {
+          const point = await socketPoint(mobile.locator(`[data-insert="${id}"]`));
+          await mobile.touchscreen.tap(point.x, point.y);
+          assert.equal(await mobile.locator(`.socket[data-piece="${id}"]`).count(), 1);
+        }
+        assert.equal(await mobile.locator('#chamber').getAttribute('data-state'), 'balanced');
+        assert.equal(await mobile.locator('#preview').isVisible(), false);
+      }
     } finally { await mobileContext.close(); }
   });
 });

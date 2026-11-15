@@ -43,8 +43,8 @@ afterEach(async () => {
 
 describe('Historical snapshots', () => {
   it('preserves fingerprints and distinguishes captures from reconstructions', async () => {
-    assert.equal(versions.length, 4);
-    assert.deepEqual(versions.map(version => version.origin), ['git', 'reconstructed', 'reconstructed', 'snapshot']);
+    assert.equal(versions.length, 5);
+    assert.deepEqual(versions.map(version => version.origin), ['git', 'reconstructed', 'reconstructed', 'snapshot', 'snapshot']);
     const hashes = new Set();
     for (const version of versions) {
       const bytes = await readFile(path.join(archive, version.file));
@@ -53,7 +53,7 @@ describe('Historical snapshots', () => {
       hashes.add(hash);
       assert.ok(version.changes.length >= 2 && version.changes.length <= 4);
     }
-    assert.equal(hashes.size, 4, 'The milestones are distinct files, not renamed copies of the latest version');
+    assert.equal(hashes.size, versions.length, 'The milestones are distinct files, not renamed copies of the latest version');
   });
 
   for (const version of versions) {
@@ -110,12 +110,27 @@ describe('Historical snapshots', () => {
     assert.equal(await page.locator('#cycleNote').textContent(), 'Случайная пара');
     assert.equal(await page.locator('#centerTarget').count(), 0);
   });
+
+  it('retains Sozvuchie with flat stones, capacity lights, and direct socket insertion', async () => {
+    await page.goto(pathToFileURL(path.join(archive, '04-direct-selection.html')).href);
+    assert.equal(await page.locator('h1').textContent(), 'Созвучие');
+    assert.deepEqual(await page.locator('.theme-switch button').allTextContents(), ['Алхимия', 'Схема']);
+    assert.equal(await page.locator('.stone-bevel, .stone-edge').count(), 0);
+    assert.equal(await page.locator('.capacity-dot:not(.spent)').count(), 3);
+    assert.equal(await page.locator('.socket-target:enabled').count(), 12);
+    await page.locator('.socket-target[data-insert="d-r"]').click();
+    assert.deepEqual(await page.evaluate(() => slots), ['d-r', null, null]);
+    assert.equal(await page.locator('.piece[data-id="d-r"]').isVisible(), false);
+    assert.equal(await page.locator('.capacity-dot:not(.spent)').count(), 2);
+    await page.locator('.socket[data-piece="d-r"]').click();
+    assert.equal(await page.locator('.capacity-dot:not(.spent)').count(), 3);
+  });
 });
 
 describe('History viewer', () => {
   it('switches real interactive snapshots and shows each step rationale', async () => {
     await page.goto(historyURL);
-    assert.equal(await page.locator('.step').count(), 4);
+    assert.equal(await page.locator('.step').count(), versions.length);
     assert.equal(await page.locator('#previous').isDisabled(), true);
     for (const version of versions) {
       await page.locator(`[data-version="${version.id}"]`).click();
@@ -138,7 +153,7 @@ describe('History viewer', () => {
       assert.doesNotMatch(await page.locator('body').innerText(), /В окне выше|Из сохранённого коммита|Снимок рабочей версии|Восстановлено по истории правок|SHA-256/);
     }
     assert.equal(await page.locator('#next').isDisabled(), true);
-    assert.equal(await page.locator('.footer').textContent(), 'ТРИАДА / АРХИВ');
+    assert.equal(await page.locator('.footer').textContent(), 'СОЗВУЧИЕ / АРХИВ');
     await page.screenshot({ path: path.join(artifacts, 'history-viewer-desktop.png'), fullPage: true });
   });
 
@@ -156,6 +171,12 @@ describe('History viewer', () => {
     assert.equal(await page.locator('#prototype').getAttribute('src'), '02-inventory.html');
     await page.locator('#next').click();
     await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'circle');
+    await page.locator('#next').click();
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'direct-selection');
+    assert.equal(await page.locator('#next').isDisabled(), true);
+    assert.equal(await page.locator('#prototype').getAttribute('src'), '04-direct-selection.html');
+    await page.locator('#previous').click();
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'circle');
     await page.locator('#previous').click();
     await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'inventory');
     await page.goto(`${historyURL}#missing-version`);
@@ -164,9 +185,9 @@ describe('History viewer', () => {
   });
 
   it('keeps the complete desktop composition visible in responsive overview frames', async () => {
-    await page.goto(`${historyURL}#inventory`);
+    await page.goto(`${historyURL}#direct-selection`);
     const frame = page.frame({ name: 'prototype' });
-    await frame.waitForURL(pathToFileURL(path.join(archive, '02-inventory.html')).href);
+    await frame.waitForURL(pathToFileURL(path.join(archive, '04-direct-selection.html')).href);
     for (const width of [320, 390, 768, 1440, 1920, 2560]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.waitForFunction(() => {
@@ -187,13 +208,13 @@ describe('History viewer', () => {
   });
 
   it('opens snapshots at full size and keeps the working prototype a separate link', async () => {
-    await page.goto(`${historyURL}#circle`);
-    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'circle');
+    await page.goto(`${historyURL}#direct-selection`);
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'direct-selection');
     const opened = page.waitForEvent('popup');
     await page.locator('#openVersion').click();
     const snapshot = await opened;
     await snapshot.waitForLoadState();
-    assert.equal(snapshot.url(), pathToFileURL(path.join(archive, '03-circle.html')).href);
+    assert.equal(snapshot.url(), pathToFileURL(path.join(archive, '04-direct-selection.html')).href);
     assert.equal(await snapshot.locator('.orbit-slot').count(), 6);
     const working = page.waitForEvent('popup');
     await page.locator('.current-link').click();

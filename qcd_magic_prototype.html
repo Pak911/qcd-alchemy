@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Триада · QCD</title>
+  <title>Созвучие · QCD</title>
   <style>
     :root {
       color-scheme: dark;
@@ -19,7 +19,6 @@
       --red: #ef8e87;
       --green: #8fcab2;
       --blue: #96b9ed;
-      --stone: #302c29;
       --stone-face: #211f20;
       --heading: Georgia, "Times New Roman", serif;
       --mono: "Cascadia Code", Consolas, monospace;
@@ -36,7 +35,6 @@
       --red: #ff929b;
       --green: #7fdbc0;
       --blue: #82baff;
-      --stone: #263e50;
       --stone-face: #172a38;
       --heading: "Segoe UI", system-ui, sans-serif;
     }
@@ -106,11 +104,9 @@
     .piece.in-use { visibility: hidden; pointer-events: none; }
     .piece-charge { color: var(--muted); font: 11px var(--mono); white-space: nowrap; }
     .rune { width: 48px; max-width: 100%; height: 58px; color: var(--piece-color); overflow: visible; }
-    .rune-stone { filter: drop-shadow(0 3px 2px #00000090); }
-    .rune-frame { fill: var(--stone); stroke: currentColor; stroke-width: .65; stroke-opacity: .45; }
-    .stone-face { fill: var(--stone-face); stroke: currentColor; stroke-width: .5; stroke-opacity: .2; }
-    .stone-bevel { fill: #ffffff; opacity: .1; }
-    .stone-edge { fill: #000000; opacity: .35; }
+    .rune-frame { fill: var(--stone-face); stroke: currentColor; stroke-width: .65; stroke-opacity: .45; }
+    .magnitude-1 .rune-frame { stroke-opacity: .55; }
+    .stone-face { fill: none; stroke: currentColor; stroke-width: .5; stroke-opacity: .25; }
     .rune-glyph { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
     .rune-reverse .rune-glyph { stroke-dasharray: 3 3; }
     .rune-mark { fill: currentColor; }
@@ -134,6 +130,9 @@
     .chamber-heading { display: flex; align-items: center; justify-content: center; gap: 12px; }
     .chamber-heading::before, .chamber-heading::after { content: ""; width: 30px; height: 1px; background: var(--line); }
     .chamber-heading .eyebrow { color: var(--accent); }
+    .capacity { display: flex; justify-content: center; gap: 16px; padding: 18px 0 4px; }
+    .capacity-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .08), 0 0 14px rgba(var(--accent-rgb), .3); transition: background .25s, border-color .25s, box-shadow .25s; }
+    .capacity-dot.spent { background: var(--bg); border-color: var(--faint); box-shadow: inset 0 1px 3px #00000080; }
     .field-wrap { position: relative; isolation: isolate; width: min(100%, 580px); margin: 0 auto; }
     .field-wrap::before { content: ""; position: absolute; width: 64%; aspect-ratio: 1; top: 17%; left: 18%; border-radius: 50%; background: radial-gradient(circle, rgba(var(--accent-rgb), .07), transparent 68%); z-index: -1; }
     .field { width: 100%; height: auto; overflow: hidden; }
@@ -145,8 +144,7 @@
     .guide { fill: none; stroke: var(--accent); stroke-width: .7; stroke-dasharray: 2 10; opacity: .09; }
     .triangle { fill: none; stroke: var(--accent); stroke-width: .8; stroke-dasharray: 2 8; opacity: .12; }
     .axis-node { color: var(--piece-color); opacity: .65; transition: opacity .25s; }
-    .axis-node.active, .axis-node.previewed { opacity: 1; }
-    .axis-node.previewed .socket-outlines { stroke: var(--piece-color); }
+    .axis-node.active { opacity: 1; }
     .strand { fill: none; stroke: var(--piece-color); stroke-width: 1.8; stroke-linecap: round; opacity: .65; }
     .strand.reverse { stroke-dasharray: 4 5; }
     .strand-glow { stroke-width: 9; opacity: .12; filter: url(#softGlow); }
@@ -184,16 +182,25 @@
     .socket-face { width: 100%; height: 100%; display: grid; place-items: center; position: relative; }
     .socket-outlines { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--bg); stroke: var(--line); stroke-width: 1; }
     .socket-outline-small { fill: #ffffff02; stroke-dasharray: 2 3; }
+    .socket-highlight { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: var(--piece-color); stroke-width: 1.6; filter: drop-shadow(0 0 3px var(--piece-color)); opacity: 0; pointer-events: none; }
+    .socket-highlight path { transform-origin: 38px 41px; }
+    .socket.filled[data-size="small"] .socket-highlight path { transform: scale(.57); }
+    .axis-node[data-preview-size] .socket-highlight, .socket.filled:hover .socket-highlight, .socket.filled:focus-visible .socket-highlight { opacity: 1; }
+    .axis-node[data-preview-size="small"] .socket .socket-highlight path { transform: scale(.57); }
+    .axis-node[data-preview-size="large"] .socket .socket-highlight path { transform: scale(1); }
+    .socket.empty > .socket-face { pointer-events: none; }
+    .socket-target { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; clip-path: polygon(50% 3.66%, 93.42% 26.83%, 93.42% 73.17%, 50% 96.34%, 6.58% 73.17%, 6.58% 26.83%); }
+    .socket-target-small { inset: auto; left: 50%; top: 50%; width: 57%; height: 57%; min-width: 24px; min-height: 24px; transform: translate(-50%, -50%); }
+    .socket-target:focus-visible { outline: none; }
     .socket .rune { position: relative; width: 100%; height: 100%; }
     .socket-ghost { position: relative; width: 65%; height: 65%; opacity: .45; }
     .socket-ghost .rune-frame { display: none; }
     .socket-ghost .rune-forward .rune-glyph { filter: none; }
     .socket .piece-charge { position: absolute; left: 0; right: 0; top: calc(100% + 3px); font-size: 10px; }
     .socket.filled .socket-outlines { stroke: color-mix(in srgb, var(--piece-color) 35%, var(--line)); }
-    .socket.filled:hover .socket-outlines { stroke: var(--piece-color); }
     .socket-remove { position: absolute; right: -3px; top: -3px; border: 1px solid var(--line); background: var(--bg); width: 21px; height: 21px; border-radius: 50%; font-size: 15px; line-height: 17px; color: var(--muted); opacity: 0; transition: opacity .15s; }
     .socket:hover .socket-remove, .socket:focus-visible .socket-remove { opacity: 1; }
-    .socket.optional { opacity: .45; }
+    .socket.optional .socket-ghost { opacity: .2; }
     .assembly-controls { display: flex; justify-content: space-between; align-items: center; width: min(100%, 290px); margin: 8px auto 0; padding: 0 8px; color: var(--muted); font: 10px var(--mono); }
     .reset { border: 0; padding: 6px 0 6px 12px; background: none; color: var(--muted); font-size: 11px; }
     .reset:hover { color: var(--ink); }
@@ -328,12 +335,12 @@
           <circle cx="20" cy="23" r="5" fill="none" stroke="currentColor"/>
           <circle cx="20" cy="23" r="1.5" fill="currentColor"/>
         </svg>
-        <div><h1>Триада</h1><p class="brand-caption">Три начала. Один баланс.</p></div>
+        <div><h1>Созвучие</h1><p class="brand-caption">Разные знаки. Общий центр.</p></div>
       </div>
       <div class="header-controls">
         <div class="theme-switch" role="group" aria-label="Визуальная подача">
-          <button type="button" data-theme-choice="artifact" aria-pressed="true">Артефакт</button>
-          <button type="button" data-theme-choice="instrument" aria-pressed="false">Инструмент</button>
+          <button type="button" data-theme-choice="artifact" aria-pressed="true">Алхимия</button>
+          <button type="button" data-theme-choice="instrument" aria-pressed="false">Схема</button>
         </div>
         <button id="toggleSound" class="sound-button" type="button" aria-pressed="true" aria-label="Звук включён. Выключить звук">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M4 9H8L13 5V19L8 15H4Z"/><path class="sound-wave" d="M16 8Q20 12 16 16M19 5Q25 12 19 19"/></svg>
@@ -359,7 +366,12 @@
       </section>
 
       <section id="chamber" class="chamber" data-state="empty" aria-label="Поле взаимодействия">
-        <div class="chamber-heading"><p class="eyebrow" id="fieldLabel">Круг созвучия</p></div>
+        <div class="chamber-heading"><p class="eyebrow" id="fieldLabel">Алхимический круг</p></div>
+        <div id="capacity" class="capacity" role="img" aria-label="Свободно мест: 3 из 3" title="Свободно мест: 3 из 3">
+          <span class="capacity-dot" aria-hidden="true"></span>
+          <span class="capacity-dot" aria-hidden="true"></span>
+          <span class="capacity-dot" aria-hidden="true"></span>
+        </div>
         <div class="field-wrap">
           <svg id="field" class="field" viewBox="0 0 640 600" role="img" aria-labelledby="fieldTitle fieldDescription">
             <title id="fieldTitle">Баланс трёх символов и их противоположностей</title>
@@ -411,7 +423,7 @@
           <div class="balance-value"><span class="balance-indicator" aria-hidden="true"></span><span id="balanceValue">Нет знаков</span></div>
           <div id="balanceTracks" class="balance-tracks" aria-hidden="true"></div>
           <div class="balance-extents" aria-hidden="true"><span>обратный</span><span>прямой</span></div>
-          <p class="readout-caption" id="readoutCaption">Разные начала.<br>Общий центр.</p>
+          <p class="readout-caption" id="readoutCaption">Разные знаки.<br>Общий центр.</p>
         </section>
       </aside>
     </div>
@@ -425,7 +437,7 @@
           <p>Пара «цвет + антицвет» и тройка разных цветов дают здесь замкнутую связь. Это наглядная модель правил сочетания, вдохновлённая квантовой хромодинамикой, а не её симуляция. Центр диаграммы иллюстрирует компенсацию; квантовые состояния, спин и динамика сильного взаимодействия не моделируются.</p>
         </div>
       </details>
-      <p class="colophon">QCD / ИНТЕРАКТИВНЫЙ ЭТЮД<br><span id="editionLabel">01 · АРТЕФАКТ</span></p>
+      <p class="colophon">QCD / ИНТЕРАКТИВНЫЙ ЭТЮД<br><span id="editionLabel">01 · АЛХИМИЯ</span></p>
     </footer>
     <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
   </main>
@@ -449,7 +461,7 @@
     const byId = Object.fromEntries(pieces.map(piece => [piece.id, piece]));
     const colors = ['red', 'green', 'blue'];
     const families = {
-      red: { label: 'Ψ', name: 'пси', roman: 'I', path: 'M24 35V12M13 14V20Q13 26 24 26Q35 26 35 20V14' },
+      red: { label: 'Ψ', name: 'пси', roman: 'I', path: 'M24 37V14M13 16V22Q13 28 24 28Q35 28 35 22V16' },
       green: { label: 'ϟ', name: 'молния', roman: 'II', path: 'M29 10 16 25H25L19 38 33 21H24Z' },
       blue: { label: '⟡', name: 'ромб', roman: 'III', path: 'M24 9Q21 21 12 24Q21 27 24 39Q27 27 36 24Q27 21 24 9Z' }
     };
@@ -520,12 +532,12 @@
 
     function runeHTML(piece, insideField = false) {
       const magnitude = Math.abs(piece.charge);
-      const size = insideField || magnitude === 2 ? 1 : .76;
+      const size = insideField || magnitude === 2 ? 1 : .57;
       const tag = insideField ? 'g' : 'svg';
       return `<${tag} class="rune rune-${piece.anti ? 'reverse' : 'forward'} magnitude-${magnitude}" ${insideField ? '' : 'viewBox="0 0 48 54"'} aria-hidden="true" focusable="false">
         <g class="${insideField ? 'rune-etching' : 'rune-stone'}" transform="translate(24 26) scale(${size}) translate(-24 -26)">
           <path class="rune-frame" d="M24 2 44 14V38L24 50 4 38V14Z"/>
-          ${insideField ? '' : '<path class="stone-bevel" d="M24 2 44 14 39 17 24 8 9 17 4 14Z"/><path class="stone-edge" d="M44 14V38L24 50V44L39 35V17Z"/><path class="stone-face" d="M24 8 39 17V35L24 44 9 35V17Z"/>'}
+          ${insideField || magnitude === 1 ? '' : '<path class="stone-face" d="M24 8 39 17V35L24 44 9 35V17Z"/>'}
           <path class="rune-glyph" d="${families[piece.color].path}" transform="translate(0 1)"/>
           ${insideField ? '' : `<circle class="rune-mark" cx="${magnitude === 2 ? 21 : 24}" cy="46" r="1"/>${magnitude === 2 ? '<circle class="rune-mark" cx="27" cy="46" r="1"/>' : ''}`}
         </g>
@@ -540,7 +552,7 @@
       $('palette').innerHTML = colors.map(color => {
         const familyPieces = ['u', 'd', 'au', 'ad'].map(prefix => byId[`${prefix}-${color[0]}`]);
         return `<div class="family ${color}"><div class="family-head" aria-hidden="true"><span>${families[color].roman}</span><span class="family-line"></span></div>
-          <div class="family-pieces">${familyPieces.map((piece, index) => `<div class="inventory-cell" data-order="${index}"><svg class="inventory-well" viewBox="0 0 48 54" aria-hidden="true"><path d="M24 2 44 14V38L24 50 4 38V14Z" transform="translate(24 26) scale(${Math.abs(piece.charge) === 2 ? 1 : .76}) translate(-24 -26)"/></svg><button class="piece ${color}" type="button" data-id="${piece.id}" aria-label="Добавить: ${pieceName(piece)}" aria-disabled="false">${runeHTML(piece)}<span class="piece-charge">${fractionText(piece.charge)}</span></button></div>`).join('')}</div></div>`;
+          <div class="family-pieces">${familyPieces.map((piece, index) => `<div class="inventory-cell" data-order="${index}"><svg class="inventory-well" viewBox="0 0 48 54" aria-hidden="true"><path d="M24 2 44 14V38L24 50 4 38V14Z" transform="translate(24 26) scale(${Math.abs(piece.charge) === 2 ? 1 : .57}) translate(-24 -26)"/></svg><button class="piece ${color}" type="button" data-id="${piece.id}" aria-label="Добавить: ${pieceName(piece)}" aria-disabled="false">${runeHTML(piece)}<span class="piece-charge">${fractionText(piece.charge)}</span></button></div>`).join('')}</div></div>`;
       }).join('');
       $('palette').addEventListener('click', event => {
         const button = event.target.closest('[data-id]');
@@ -562,6 +574,7 @@
 
     function renderSlots() {
       const valid = analyzeCombination().valid;
+      const count = slots.filter(Boolean).length;
       $('slots').innerHTML = colors.flatMap(color => [false, true].map(anti => {
         const sign = anti ? -1 : 1;
         const x = center.x + vectors[color].x * sign * 208;
@@ -572,13 +585,23 @@
           const label = piece ? `Убрать: ${pieceName(piece)}` : `${anti ? 'Обратный' : 'Прямой'} знак ${families[color].name}, гнездо свободно`;
           const content = piece ? runeHTML(piece) + '<span class="socket-remove" aria-hidden="true">×</span>'
             : `<svg class="socket-ghost" viewBox="0 0 48 54" aria-hidden="true">${runeHTML({ color, anti, charge: 2 }, true)}</svg>`;
-          return `<button class="socket ${piece ? 'filled' : valid ? 'optional' : ''}" type="button" ${piece ? `data-slot="${index}" data-piece="${piece.id}"` : 'disabled'} aria-label="${label}">
-            <span class="socket-face"><svg class="socket-outlines" viewBox="0 0 76 82" aria-hidden="true"><path class="socket-outline-large" d="M38 3 71 22V60L38 79 5 60V22Z"/><path class="socket-outline-small" d="M38 3 71 22V60L38 79 5 60V22Z" transform="translate(38 41) scale(.76) translate(-38 -41)"/></svg>${content}</span>${piece ? `<span class="piece-charge">${fractionText(piece.charge)}</span>` : ''}</button>`;
+          const targets = piece ? '' : ['u', 'd'].map(flavor => {
+            const candidate = byId[`${anti ? 'a' : ''}${flavor}-${color[0]}`];
+            const large = flavor === 'u';
+            return `<button class="socket-target socket-target-${large ? 'large' : 'small'}" type="button" data-insert="${candidate.id}" ${count === slots.length ? 'disabled' : ''} aria-label="Вставить ${large ? 'большой' : 'маленький'} камень: ${pieceName(candidate)}"></button>`;
+          }).join('');
+          const tag = piece ? 'button' : 'div';
+          return `<${tag} class="socket ${piece ? 'filled' : `empty ${valid ? 'optional' : ''}`}" ${piece ? `type="button" data-slot="${index}" data-piece="${piece.id}" data-size="${Math.abs(piece.charge) === 2 ? 'large' : 'small'}"` : 'role="group"'} aria-label="${label}">
+            <span class="socket-face"><svg class="socket-outlines" viewBox="0 0 76 82" aria-hidden="true"><path class="socket-outline-large" d="M38 3 71 22V60L38 79 5 60V22Z"/><path class="socket-outline-small" d="M38 3 71 22V60L38 79 5 60V22Z" transform="translate(38 41) scale(.57) translate(-38 -41)"/></svg>${content}<svg class="socket-highlight" viewBox="0 0 76 82" aria-hidden="true"><path d="M38 3 71 22V60L38 79 5 60V22Z"/></svg></span>
+            ${piece ? `<span class="piece-charge">${fractionText(piece.charge)}</span>` : targets}</${tag}>`;
         }).join('');
         return `<div class="orbit-slot axis-node ${color} ${indices.length ? 'active' : ''} ${indices.length > 1 ? 'multiple' : ''}" data-axis="${color}-${anti}" style="left:${x / 640 * 100}%;top:${y / 600 * 100}%">${sockets}</div>`;
       })).join('');
-      const count = slots.filter(Boolean).length;
       $('slotCount').textContent = `${count} / 3 камня`;
+      const capacityLabel = `Свободно мест: ${slots.length - count} из ${slots.length}`;
+      $('capacity').setAttribute('aria-label', capacityLabel);
+      $('capacity').title = capacityLabel;
+      [...$('capacity').children].forEach((dot, index) => dot.classList.toggle('spent', index < count));
       $('reset').disabled = count === 0;
       $('inventoryCount').textContent = `${pieces.length - count} / ${pieces.length}`;
       $('inventoryCount').setAttribute('aria-label', `Камней в инвентаре: ${pieces.length - count} из ${pieces.length}`);
@@ -694,12 +717,15 @@
         $(name).setAttribute('cy', y);
       }
       $('previewRing').style.display = analyzeCombination(future).valid ? '' : 'none';
-      document.querySelectorAll('[data-axis]').forEach(node => node.classList.toggle('previewed', node.dataset.axis === `${piece.color}-${piece.anti}`));
+      document.querySelectorAll('[data-axis]').forEach(node => {
+        if (node.dataset.axis === `${piece.color}-${piece.anti}`) node.dataset.previewSize = Math.abs(piece.charge) === 2 ? 'large' : 'small';
+        else delete node.dataset.previewSize;
+      });
     }
 
     function clearPreview() {
       $('preview').setAttribute('hidden', '');
-      document.querySelectorAll('.previewed').forEach(node => node.classList.remove('previewed'));
+      document.querySelectorAll('[data-preview-size]').forEach(node => delete node.dataset.previewSize);
     }
 
     function render({ audible = false, added = null } = {}) {
@@ -739,7 +765,7 @@
       }
       const source = document.querySelector(`.piece[data-id="${id}"]`);
       const from = source.querySelector('.rune').getBoundingClientRect();
-      const moveFocus = document.activeElement === source;
+      const moveFocus = document.activeElement === source || document.activeElement?.getAttribute('data-insert') === id;
       slots[index] = id;
       $('cycleNote').textContent = '';
       $('announcement').textContent = '';
@@ -848,9 +874,9 @@
     function setTheme(theme) {
       document.documentElement.dataset.theme = theme;
       document.querySelectorAll('[data-theme-choice]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.themeChoice === theme)));
-      $('fieldLabel').textContent = theme === 'artifact' ? 'Круг созвучия' : 'Поле взаимодействия';
-      $('editionLabel').textContent = theme === 'artifact' ? '01 · АРТЕФАКТ' : '02 · ИНСТРУМЕНТ';
-      $('readoutCaption').innerHTML = theme === 'artifact' ? 'Разные начала.<br>Общий центр.' : 'Компенсация цвета<br>не означает нулевой заряд.';
+      $('fieldLabel').textContent = theme === 'artifact' ? 'Алхимический круг' : 'Поле взаимодействия';
+      $('editionLabel').textContent = theme === 'artifact' ? '01 · АЛХИМИЯ' : '02 · СХЕМА';
+      $('readoutCaption').innerHTML = theme === 'artifact' ? 'Разные знаки.<br>Общий центр.' : 'Компенсация цвета<br>не означает нулевой заряд.';
       try { localStorage.setItem('qcd-theme', theme); } catch { /* File URLs may disallow storage. */ }
     }
 
@@ -863,9 +889,27 @@
 
     document.querySelectorAll('[data-theme-choice]').forEach(button => button.addEventListener('click', () => setTheme(button.dataset.themeChoice)));
     $('slots').addEventListener('click', event => {
+      const insert = event.target.closest('[data-insert]');
+      if (insert) {
+        if (!insert.disabled) addPiece(insert.dataset.insert);
+        return;
+      }
       const button = event.target.closest('[data-slot]');
       if (button && slots[Number(button.dataset.slot)]) removePiece(Number(button.dataset.slot));
     });
+    $('slots').addEventListener('pointerover', event => {
+      if (event.pointerType === 'touch') return;
+      const button = event.target.closest('[data-insert]');
+      if (button && !button.disabled) showPreview(button.dataset.insert);
+      else clearPreview();
+    });
+    $('slots').addEventListener('pointerleave', clearPreview);
+    $('slots').addEventListener('focusin', event => {
+      const button = event.target.closest('[data-insert]');
+      if (button && !button.disabled) showPreview(button.dataset.insert);
+      else clearPreview();
+    });
+    $('slots').addEventListener('focusout', clearPreview);
     $('next2').addEventListener('click', () => randomRecipe(2));
     $('next3').addEventListener('click', () => randomRecipe(3));
     $('reset').addEventListener('click', () => {
