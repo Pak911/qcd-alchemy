@@ -12,6 +12,7 @@
 - Use `npm --cache ".npm-cache" run test:layout` for seal geometry, focus synchronization, animation, and responsive layouts.
 - Use `npm --cache ".npm-cache" run test:history` for snapshots and gallery navigation. Skip this group when only the working prototype changes.
 - Use `npm --cache ".npm-cache" run test:i18n` for language selection, translations, localized layouts, and preserving state across language changes.
+- Use `npm --cache ".npm-cache" run test:site` for static-site packaging and the public file allowlist.
 - Run the full `npm --cache ".npm-cache" test` before a user-authorized commit and after broad changes whose impact crosses groups or is uncertain. Commit permission is still required separately.
 - Keep new tests in the appropriate named suite and update the npm group filters when suites are renamed or added, so no suite falls outside the grouped commands.
 - Report which selection ran; do not describe a focused pass as a full-suite pass. Check screenshots for visual changes when useful.
