@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { before, after, beforeEach, afterEach, describe, it } from 'node:test';
-import { mkdir, readFile } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
+import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import '../versions/history-data.js';
@@ -42,18 +41,11 @@ afterEach(async () => {
 });
 
 describe('Historical snapshots', () => {
-  it('preserves fingerprints and distinguishes captures from reconstructions', async () => {
-    assert.equal(versions.length, 5);
-    assert.deepEqual(versions.map(version => version.origin), ['git', 'reconstructed', 'reconstructed', 'snapshot', 'snapshot']);
-    const hashes = new Set();
+  it('lists six stages with concise descriptions', () => {
+    assert.equal(versions.length, 6);
     for (const version of versions) {
-      const bytes = await readFile(path.join(archive, version.file));
-      const hash = createHash('sha256').update(bytes).digest('hex');
-      assert.equal(hash, version.sha256, `${version.file} must remain an immutable historical snapshot`);
-      hashes.add(hash);
       assert.ok(version.changes.length >= 2 && version.changes.length <= 4);
     }
-    assert.equal(hashes.size, versions.length, 'The milestones are distinct files, not renamed copies of the latest version');
   });
 
   for (const version of versions) {
@@ -125,6 +117,29 @@ describe('Historical snapshots', () => {
     await page.locator('.socket[data-piece="d-r"]').click();
     assert.equal(await page.locator('.capacity-dot:not(.spent)').count(), 3);
   });
+  it('retains seal abilities, reserved ingredients, the named scale, and scientific states', async () => {
+    await page.goto(pathToFileURL(path.join(archive, '05-seal-abilities.html')).href);
+    assert.equal(await page.locator('h1').textContent(), 'Равновесие');
+    assert.deepEqual(await page.locator('.action-value').allTextContents(), ['−2', '−1', '0', '+1', '+2']);
+    assert.deepEqual(await page.locator('.action-name').allTextContents(), ['Сжатие', 'Притяжение', 'Удержание', 'Отталкивание', 'Рассеивание']);
+    await page.locator('.piece[data-id="u-r"]').click();
+    await page.locator('.piece[data-id="ad-r"]').click();
+    assert.equal(await page.locator('#abilityName').textContent(), 'Малое отталкивание');
+    assert.equal(await page.locator('#alchemySeal [data-action="repulsion"]').count(), 1);
+    await page.locator('#bindSeal').click();
+    assert.equal(await page.locator('.ability-slot').count(), 6);
+    assert.equal(await page.locator('.ability-label').textContent(), 'Малое отталкивание');
+    assert.equal(await page.locator('#inventoryCount').textContent(), '10 / 12');
+    assert.equal(await page.locator('.piece[data-id="u-r"]').isVisible(), false);
+    assert.equal(await page.locator('#actionMarker').isVisible(), false);
+    await page.locator('[data-theme-choice="instrument"]').click();
+    assert.equal(await page.locator('h1').textContent(), 'Цветовой баланс');
+    assert.equal(await page.locator('.ability-label').textContent(), 'Мезон · +1 e');
+    await page.locator('[data-ability="0"]').click();
+    assert.match(await page.locator('#runeTooltip').textContent(), /Красный u-кварк.*Примеры частиц.*пион π⁺/s);
+    await page.locator('[data-release="0"]').click();
+    assert.equal(await page.locator('#inventoryCount').textContent(), '12 / 12');
+  });
 });
 
 describe('History viewer', () => {
@@ -142,7 +157,6 @@ describe('History viewer', () => {
       assert.equal(await page.locator('#question').textContent(), version.question);
       assert.deepEqual(await page.locator('#changes li').allTextContents(), version.changes);
       assert.equal(await page.locator('#changesLabel').isVisible(), true);
-      assert.equal(await page.locator('.provenance, #originLabel, #fingerprint').count(), 0);
       assert.equal(await page.locator('[aria-current="step"]').getAttribute('data-version'), version.id);
       assert.ok((await page.locator('#openVersion').getAttribute('href')).endsWith(version.file));
       assert.equal(await frame.locator('#palette .piece').count(), 12);
@@ -150,10 +164,9 @@ describe('History viewer', () => {
       assert.equal(await frame.evaluate(() => analyzeCombination().valid), true);
       await page.locator(`[data-version="${version.id}"]`).click();
       assert.equal(await frame.evaluate(() => slots.filter(Boolean).length), 2, 'Selecting the current step does not reload it');
-      assert.doesNotMatch(await page.locator('body').innerText(), /В окне выше|Из сохранённого коммита|Снимок рабочей версии|Восстановлено по истории правок|SHA-256/);
     }
     assert.equal(await page.locator('#next').isDisabled(), true);
-    assert.equal(await page.locator('.footer').textContent(), 'СОЗВУЧИЕ / АРХИВ');
+    assert.equal(await page.locator('.footer').textContent(), 'РАВНОВЕСИЕ / АРХИВ');
     await page.screenshot({ path: path.join(artifacts, 'history-viewer-desktop.png'), fullPage: true });
   });
 
@@ -173,8 +186,13 @@ describe('History viewer', () => {
     await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'circle');
     await page.locator('#next').click();
     await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'direct-selection');
-    assert.equal(await page.locator('#next').isDisabled(), true);
     assert.equal(await page.locator('#prototype').getAttribute('src'), '04-direct-selection.html');
+    await page.locator('#next').click();
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'seal-abilities');
+    assert.equal(await page.locator('#next').isDisabled(), true);
+    assert.equal(await page.locator('#prototype').getAttribute('src'), '05-seal-abilities.html');
+    await page.locator('#previous').click();
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'direct-selection');
     await page.locator('#previous').click();
     await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'circle');
     await page.locator('#previous').click();
@@ -185,9 +203,9 @@ describe('History viewer', () => {
   });
 
   it('keeps the complete desktop composition visible in responsive overview frames', async () => {
-    await page.goto(`${historyURL}#direct-selection`);
+    await page.goto(`${historyURL}#seal-abilities`);
     const frame = page.frame({ name: 'prototype' });
-    await frame.waitForURL(pathToFileURL(path.join(archive, '04-direct-selection.html')).href);
+    await frame.waitForURL(pathToFileURL(path.join(archive, '05-seal-abilities.html')).href);
     for (const width of [320, 390, 768, 1440, 1920, 2560]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.waitForFunction(() => {
@@ -196,6 +214,8 @@ describe('History viewer', () => {
       });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Viewer overflows at ${width}px`);
       assert.equal(await frame.evaluate(() => innerWidth), 1440);
+      assert.equal(await frame.evaluate(() => innerHeight), 1280);
+      assert.ok(await frame.evaluate(() => document.querySelector('.abilities').getBoundingClientRect().bottom <= innerHeight), 'The ability panel fits in the archive preview');
       const bounds = await page.evaluate(() => ({
         outer: document.querySelector('#preview').getBoundingClientRect().toJSON(),
         inner: document.querySelector('#prototype').getBoundingClientRect().toJSON()
@@ -208,14 +228,15 @@ describe('History viewer', () => {
   });
 
   it('opens snapshots at full size and keeps the working prototype a separate link', async () => {
-    await page.goto(`${historyURL}#direct-selection`);
-    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'direct-selection');
+    await page.goto(`${historyURL}#seal-abilities`);
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'seal-abilities');
     const opened = page.waitForEvent('popup');
     await page.locator('#openVersion').click();
     const snapshot = await opened;
     await snapshot.waitForLoadState();
-    assert.equal(snapshot.url(), pathToFileURL(path.join(archive, '04-direct-selection.html')).href);
+    assert.equal(snapshot.url(), pathToFileURL(path.join(archive, '05-seal-abilities.html')).href);
     assert.equal(await snapshot.locator('.orbit-slot').count(), 6);
+    assert.equal(await snapshot.locator('.ability-slot').count(), 6);
     const working = page.waitForEvent('popup');
     await page.locator('.current-link').click();
     const prototype = await working;

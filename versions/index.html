@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>История Созвучия · QCD</title>
+  <title>История Равновесия · QCD</title>
   <style>
     :root { color-scheme: dark; --bg: #161514; --ink: #eae3d6; --muted: #a49b8e; --accent: #d5b987; --line: #39332b; --mono: "Cascadia Code", Consolas, monospace; }
     * { box-sizing: border-box; }
@@ -43,8 +43,8 @@
     .paging { display: flex; gap: 6px; }
     .paging button { border: 1px solid var(--line); border-radius: 3px; background: transparent; width: 36px; height: 34px; font-size: 16px; }
     .paging button:not(:disabled):hover { color: var(--accent); border-color: var(--accent); }
-    .preview { width: 100%; aspect-ratio: 1440 / 1040; overflow: hidden; position: relative; border-radius: 4px; background: #100f10; box-shadow: 0 0 0 1px var(--line), 0 16px 50px #00000025; }
-    .preview iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 1040px; border: 0; transform: scale(var(--preview-scale, 1)); transform-origin: top left; background: #100f10; }
+    .preview { width: 100%; aspect-ratio: 1440 / var(--preview-height, 1040); overflow: hidden; position: relative; border-radius: 4px; background: #100f10; box-shadow: 0 0 0 1px var(--line), 0 16px 50px #00000025; }
+    .preview iframe { position: absolute; left: 0; top: 0; width: 1440px; height: calc(var(--preview-height, 1040) * 1px); border: 0; transform: scale(var(--preview-scale, 1)); transform-origin: top left; background: #100f10; }
     .notes { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 28px; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
     .question { font: normal 21px/1.5 Georgia, serif; margin: 9px 0 0; }
     .changes { margin: 10px 0 0; padding-left: 17px; font-size: 12px; color: var(--muted); }
@@ -81,7 +81,7 @@
     <header class="masthead">
       <div>
         <p class="eyebrow">QCD / История итераций</p>
-        <h1>Как появилось Созвучие</h1>
+        <h1>Как появилось Равновесие</h1>
         <p class="intro">От работающих правил к тому, что можно почувствовать без инструкции.</p>
       </div>
       <a class="current-link" href="../qcd_magic_prototype.html" target="_blank" rel="noopener">Рабочий прототип <span aria-hidden="true">↗</span></a>
@@ -112,8 +112,8 @@
         </div>
       </section>
     </div>
-    <footer class="footer"><span>СОЗВУЧИЕ / АРХИВ</span></footer>
-    <noscript><p>Для переключения этапов включи JavaScript. Прямые ссылки: <a href="00-original.html">исходник</a>, <a href="01-redesign.html">новая подача</a>, <a href="02-inventory.html">инвентарь</a>, <a href="03-circle.html">сборка на круге</a>, <a href="04-direct-selection.html">Созвучие</a>.</p></noscript>
+    <footer class="footer"><span>РАВНОВЕСИЕ / АРХИВ</span></footer>
+    <noscript><p>Для переключения этапов включи JavaScript. Прямые ссылки: <a href="00-original.html">исходник</a>, <a href="01-redesign.html">новая подача</a>, <a href="02-inventory.html">инвентарь</a>, <a href="03-circle.html">сборка на круге</a>, <a href="04-direct-selection.html">Созвучие</a>, <a href="05-seal-abilities.html">Равновесие и способности</a>.</p></noscript>
   </main>
   <script src="history-data.js"></script>
   <script>
@@ -145,6 +145,7 @@
       if (active === index) return;
       active = index;
       const version = versions[index];
+      $('preview').style.setProperty('--preview-height', String(version.previewHeight || 1040));
       document.querySelectorAll('.step').forEach((button, i) => {
         if (i === index) button.setAttribute('aria-current', 'step');
         else button.removeAttribute('aria-current');
@@ -168,13 +169,13 @@
       }
       $('previous').disabled = index === 0;
       $('next').disabled = index === versions.length - 1;
-      document.title = `${version.title} · История Созвучия`;
+      document.title = `${version.title} · История Равновесия`;
     }
 
     $('previous').addEventListener('click', () => { if (active > 0) location.hash = versions[active - 1].id; });
     $('next').addEventListener('click', () => { if (active < versions.length - 1) location.hash = versions[active + 1].id; });
     window.addEventListener('hashchange', showVersion);
-    // Equal desktop viewports let the archived compositions be compared without editing them.
+    // Keep a common desktop width; taller iterations can include their additional panels.
     new ResizeObserver(([entry]) => {
       $('preview').style.setProperty('--preview-scale', String(entry.contentRect.width / 1440));
     }).observe($('preview'));

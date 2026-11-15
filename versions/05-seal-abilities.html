@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="ru" data-theme="artifact">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Равновесие · QCD</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #100f10;
+      --surface: #19171a;
+      --ink: #ede5d4;
+      --muted: #a59b8c;
+      --faint: #635d55;
+      --line: #383129;
+      --accent: #d3b781;
+      --accent-rgb: 211, 183, 129;
+      --red: #ef8e87;
+      --green: #8fcab2;
+      --blue: #96b9ed;
+      --stone-face: #211f20;
+      --heading: Georgia, "Times New Roman", serif;
+      --mono: "Cascadia Code", Consolas, monospace;
+    }
+    :root[data-theme="instrument"] {
+      --bg: #0c121a;
+      --surface: #111e2a;
+      --ink: #e5eff8;
+      --muted: #92a9bd;
+      --faint: #506477;
+      --line: #273b4b;
+      --accent: #b1e6ee;
+      --accent-rgb: 177, 230, 238;
+      --red: #ff929b;
+      --green: #7fdbc0;
+      --blue: #82baff;
+      --stone-face: #172a38;
+      --heading: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.5 "Segoe UI", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 51% 40%, rgba(var(--accent-rgb), .065), transparent 58%),
+        repeating-linear-gradient(0deg, transparent 0 3px, #ffffff02 3px 4px);
+    }
+    button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    button, summary { touch-action: manipulation; }
+    button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+    button:disabled { cursor: default; }
+    button svg { pointer-events: none; }
+    svg { display: block; }
+    [hidden] { display: none !important; }
+    .shell { max-width: 1320px; margin: 0 auto; padding: 26px 44px 24px; zoom: var(--workspace-scale, 1); }
+    .masthead { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 25px; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 16px; }
+    .brand-mark { width: 38px; height: 44px; color: var(--accent); }
+    h1 { font: normal 36px/1 var(--heading); letter-spacing: .025em; margin: 0 0 8px; }
+    .header-controls { display: flex; align-items: center; gap: 22px; }
+    .theme-switch { display: flex; padding: 4px; border: 1px solid var(--line); border-radius: 5px; }
+    .theme-switch button { border: 0; border-radius: 2px; background: transparent; padding: 8px 14px; color: var(--muted); font-size: 12px; }
+    .theme-switch button[aria-pressed="true"] { color: var(--ink); background: rgba(var(--accent-rgb), .1); box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .12); }
+    .sound-button { display: flex; align-items: center; gap: 8px; border: 0; padding: 10px 0 10px 8px; background: none; color: var(--muted); font-size: 12px; }
+    .sound-button svg { width: 19px; height: 19px; }
+    .sound-button[aria-pressed="false"] .sound-wave { display: none; }
+    .sound-button[aria-pressed="true"] { color: var(--accent); }
+    .workbench { display: grid; grid-template-columns: 236px minmax(0, 1fr) 194px; gap: 24px; align-items: start; padding-top: 34px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .eyebrow { margin: 0; font: 10px/1.5 var(--mono); letter-spacing: .17em; text-transform: uppercase; color: var(--muted); }
+    .inventory-count { color: var(--muted); font: 10px var(--mono); }
+    .library { padding-top: 10px; }
+    .palette-labels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 21px 0 10px; color: var(--muted); font-size: 10px; text-align: center; }
+    .palette { padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: #00000026; box-shadow: inset 0 2px 12px #00000040, 0 1px 0 #ffffff04; }
+    .family { padding: 10px 0 12px; border-bottom: 1px solid var(--line); }
+    .family:last-child { border-bottom: 0; }
+    .family-head { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+    .family-head span:first-child { font: 10px var(--mono); color: var(--piece-color); }
+    .family-line { height: 1px; flex: 1; background: linear-gradient(90deg, var(--piece-color), transparent); opacity: .25; }
+    .family-pieces { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .inventory-cell { position: relative; min-width: 0; }
+    .inventory-well { position: absolute; width: 100%; height: 58px; top: 5px; fill: #00000030; stroke: var(--line); stroke-width: .65; }
+    .inventory-well path { stroke-dasharray: 2 3; }
+    .piece {
+      position: relative; min-width: 0; border: 1px solid transparent; border-radius: 3px;
+      width: 100%; background: transparent; padding: 5px 0 8px; display: flex; flex-direction: column;
+      align-items: center; gap: 5px; transition: background .2s, border-color .2s, transform .2s;
+    }
+    .piece:hover, .piece:focus-visible { background: color-mix(in srgb, var(--piece-color) 7%, transparent); border-color: color-mix(in srgb, var(--piece-color) 25%, transparent); transform: translateY(-3px); }
+    .piece[aria-disabled="true"] { opacity: .65; }
+    .piece[aria-disabled="true"]:hover { transform: none; }
+    .piece.in-use { visibility: hidden; pointer-events: none; }
+    .piece-charge { color: var(--muted); font: 11px var(--mono); white-space: nowrap; }
+    .rune { width: 48px; max-width: 100%; height: 58px; color: var(--piece-color); overflow: visible; }
+    .rune-frame { fill: var(--stone-face); stroke: currentColor; stroke-width: .65; stroke-opacity: .45; }
+    .magnitude-1 .rune-frame { stroke-opacity: .55; }
+    .stone-face { fill: none; stroke: currentColor; stroke-width: .5; stroke-opacity: .25; }
+    .rune-glyph { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+    .quark-glyph { fill: currentColor; stroke: none; font: italic 26px Georgia, serif; text-anchor: middle; }
+    .rune-reverse .rune-glyph { stroke-dasharray: 3 3; }
+    .rune-mark { fill: currentColor; }
+    .rune-forward .rune-glyph { filter: drop-shadow(0 0 3px currentColor); }
+    .stone-flight { position: fixed; pointer-events: none; z-index: 20; transform-origin: top left; }
+    .stone-flight .rune { width: 100%; height: 100%; }
+    .red { --piece-color: var(--red); }
+    .green { --piece-color: var(--green); }
+    .blue { --piece-color: var(--blue); }
+    .library-note { color: var(--muted); font-size: 11px; margin: 13px 0 27px; }
+    .examples { padding-top: 19px; border-top: 1px solid var(--line); }
+    .example-buttons { display: flex; gap: 8px; margin-top: 10px; }
+    .example-button { display: flex; flex: 1; justify-content: space-between; gap: 8px; border: 1px solid var(--line); background: transparent; border-radius: 3px; padding: 9px 11px; color: var(--muted); font-size: 12px; }
+    .example-button:hover { border-color: var(--accent); color: var(--ink); }
+    .dice { display: inline-block; width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.3; vertical-align: middle; }
+    .dice .pip { fill: currentColor; stroke: none; }
+    .examples > .eyebrow { display: flex; align-items: center; gap: 9px; }
+    .example-button .dice { color: var(--accent); }
+    .cycle-note { min-height: 16px; margin: 9px 0 0; font: 10px var(--mono); color: var(--muted); }
+    .chamber { min-width: 0; text-align: center; }
+    .chamber-heading { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .chamber-heading::before, .chamber-heading::after { content: ""; width: 30px; height: 1px; background: var(--line); }
+    .chamber-heading .eyebrow { color: var(--accent); }
+    .capacity { display: flex; justify-content: center; gap: 16px; padding: 18px 0 4px; }
+    .capacity-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .08), 0 0 14px rgba(var(--accent-rgb), .3); transition: background .25s, border-color .25s, box-shadow .25s; }
+    .capacity-dot.spent { background: var(--bg); border-color: var(--faint); box-shadow: inset 0 1px 3px #00000080; }
+    .field-wrap { position: relative; isolation: isolate; width: min(100%, 580px); margin: 0 auto; }
+    .field-wrap::before { content: ""; position: absolute; width: 64%; aspect-ratio: 1; top: 17%; left: 18%; border-radius: 50%; background: radial-gradient(circle, rgba(var(--accent-rgb), .07), transparent 68%); z-index: -1; }
+    .field { width: 100%; height: auto; overflow: hidden; }
+    .engraving { fill: none; stroke: var(--accent); stroke-width: .7; opacity: .28; }
+    .outer-ticks { stroke: var(--accent); stroke-width: 1; opacity: .3; }
+    .major-ticks { opacity: .55; }
+    .orbit { transform-origin: 320px 294px; }
+    .orbit-detail { stroke-dasharray: 2 11; opacity: .18; }
+    .guide { fill: none; stroke: var(--accent); stroke-width: .7; stroke-dasharray: 2 10; opacity: .09; }
+    .triangle { fill: none; stroke: var(--accent); stroke-width: .8; stroke-dasharray: 2 8; opacity: .12; }
+    .axis-node { color: var(--piece-color); opacity: .65; transition: opacity .25s; }
+    .axis-node.active { opacity: 1; }
+    .strand { fill: none; stroke: var(--piece-color); stroke-width: 1.8; stroke-linecap: round; opacity: .65; }
+    .strand.reverse { stroke-dasharray: 4 5; }
+    .strand-glow { stroke-width: 9; opacity: .12; filter: url(#softGlow); }
+    .target-light { fill: url(#focusLight); opacity: .8; }
+    .center-target { fill: rgba(var(--accent-rgb), .035); stroke: var(--accent); stroke-width: 1.7; opacity: .9; }
+    .focus-halo { fill: url(#focusLight); opacity: .6; }
+    .focus-ring { fill: none; stroke: var(--ink); stroke-width: 1; opacity: .3; }
+    .focus-dot { fill: var(--ink); filter: url(#pointGlow); }
+    .focus-seed { fill: var(--ink); }
+    .result-seal { fill: none; stroke: var(--accent); stroke-width: .8; opacity: 0; transition: opacity .4s; }
+    .preview-path { fill: none; stroke: var(--piece-color); stroke-width: 1; stroke-dasharray: 3 5; opacity: .65; }
+    .preview-dot { fill: var(--bg); stroke: var(--piece-color); stroke-width: 1.5; }
+    .preview-ring { fill: none; stroke: var(--accent); stroke-width: 1; opacity: .65; }
+    .instrument-only { display: none; }
+    .instrument-label { fill: var(--muted); font: 9px var(--mono); letter-spacing: 1px; }
+    .field-status { min-height: 69px; margin-top: -17px; position: relative; }
+    .result-title { margin: 0; font: normal 25px/1.3 var(--heading); letter-spacing: .015em; }
+    .result-detail { min-height: 18px; margin: 7px 0 0; color: var(--muted); font-size: 11px; letter-spacing: .02em; }
+    .chamber[data-state="balanced"] .result-title { color: var(--accent); }
+    .chamber[data-state="balanced"] .result-seal { opacity: .35; }
+    .chamber[data-state="balanced"] .center-target { stroke: var(--ink); opacity: 1; }
+    .chamber[data-state="balanced"] .focus-halo { opacity: 1; }
+    .chamber[data-state="balanced"] .orbit { animation: orbit-turn 100s linear infinite; }
+    .chamber[data-state="empty"] #focus, .chamber[data-state="empty"] .target-light { opacity: 0; }
+    .release-ring { fill: none; stroke: var(--accent); stroke-width: 1.3; opacity: 0; transform-origin: 320px 294px; }
+    .chamber.arrived .release-ring { animation: release .95s ease-out; }
+    .alchemy-seal { opacity: .15; transition: opacity .5s; pointer-events: none; }
+    .alchemy-seal .seal-icon { width: 100px; height: 100px; }
+    [data-theme="artifact"] .chamber[data-state="balanced"] .alchemy-seal { opacity: 1; }
+    [data-theme="artifact"] .chamber[data-state="balanced"] #focus { opacity: .12; }
+    [data-theme="artifact"] .chamber.arrived .alchemy-seal .seal-icon { animation: seal-imprint .7s ease-out both; transform-origin: 50px 50px; }
+    @keyframes seal-imprint { from { opacity: .1; transform: scale(1.3) rotate(-12deg); filter: blur(2px); } to { opacity: 1; transform: scale(1) rotate(0); filter: blur(0); } }
+    .slots { position: absolute; inset: 0; pointer-events: none; }
+    .orbit-slot { position: absolute; width: 11.875%; min-width: 40px; aspect-ratio: 76 / 82; transform: translate(-50%, -50%); }
+    .socket { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; padding: 0; pointer-events: auto; }
+    .socket:hover, .socket:focus-visible { z-index: 1; }
+    .orbit-slot.multiple .socket:first-child { transform: translateX(-40%); }
+    .orbit-slot.multiple .socket:last-child { transform: translateX(40%); }
+    .socket-face { width: 100%; height: 100%; display: grid; place-items: center; position: relative; }
+    .socket-outlines { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--bg); stroke: var(--line); stroke-width: 1; }
+    .socket-outline-small { fill: #ffffff02; stroke-dasharray: 2 3; }
+    .socket-highlight { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: var(--piece-color); stroke-width: 1.6; filter: drop-shadow(0 0 3px var(--piece-color)); opacity: 0; pointer-events: none; }
+    .socket-highlight path { transform-origin: 38px 41px; }
+    .socket.filled[data-size="small"] .socket-highlight path { transform: scale(.57); }
+    .axis-node[data-preview-size] .socket-highlight, .socket.filled:hover .socket-highlight, .socket.filled:focus-visible .socket-highlight { opacity: 1; }
+    .axis-node[data-preview-size="small"] .socket .socket-highlight path { transform: scale(.57); }
+    .axis-node[data-preview-size="large"] .socket .socket-highlight path { transform: scale(1); }
+    .socket.empty > .socket-face { pointer-events: none; }
+    .socket-target { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; clip-path: polygon(50% 3.66%, 93.42% 26.83%, 93.42% 73.17%, 50% 96.34%, 6.58% 73.17%, 6.58% 26.83%); }
+    .socket-target-small { inset: auto; left: 50%; top: 50%; width: 57%; height: 57%; min-width: 24px; min-height: 24px; transform: translate(-50%, -50%); }
+    .socket-target:focus-visible { outline: none; }
+    .socket .rune { position: relative; width: 100%; height: 100%; }
+    .socket-ghost { position: relative; width: 65%; height: 65%; opacity: .45; }
+    .socket-ghost .rune-frame { display: none; }
+    .socket-ghost .rune-forward .rune-glyph { filter: none; }
+    .socket .piece-charge { position: absolute; left: 0; right: 0; top: calc(100% + 3px); font-size: 10px; }
+    .socket.filled .socket-outlines { stroke: color-mix(in srgb, var(--piece-color) 35%, var(--line)); }
+    .socket-remove { position: absolute; right: -3px; top: -3px; border: 1px solid var(--line); background: var(--bg); width: 21px; height: 21px; border-radius: 50%; font-size: 15px; line-height: 17px; color: var(--muted); opacity: 0; transition: opacity .15s; }
+    .socket:hover .socket-remove, .socket:focus-visible .socket-remove { opacity: 1; }
+    .socket.optional .socket-ghost { opacity: .2; }
+    .assembly-controls { display: flex; justify-content: space-between; align-items: center; width: min(100%, 290px); margin: 8px auto 0; padding: 0 8px; color: var(--muted); font: 10px var(--mono); }
+    .reset { border: 0; padding: 6px 0 6px 12px; background: none; color: var(--muted); font-size: 11px; }
+    .reset:hover { color: var(--ink); }
+    .reset:disabled { color: var(--faint); }
+    .bind-space { min-height: 52px; padding-top: 12px; }
+    .bind-seal { border: 1px solid var(--accent); border-radius: 3px; padding: 9px 20px; background: rgba(var(--accent-rgb), .08); color: var(--accent); font-size: 12px; }
+    .bind-seal:hover { background: rgba(var(--accent-rgb), .16); }
+    .abilities { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .ability-bar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; list-style: none; padding: 0; margin: 16px 0 0; }
+    .ability-slot { position: relative; min-width: 0; min-height: 146px; border: 1px solid var(--line); border-radius: 4px; background: #00000018; }
+    .ability-slot.empty { display: grid; place-items: center; border-style: dashed; color: var(--faint); font: 11px var(--mono); }
+    .ability-card { display: flex; flex-direction: column; align-items: center; width: 100%; min-height: 146px; padding: 12px 8px; border: 0; border-radius: 4px; background: transparent; text-align: center; cursor: help; }
+    .ability-card:hover, .ability-card:focus-visible { background: rgba(var(--accent-rgb), .04); }
+    .ability-card .seal-icon { width: 72px; height: 72px; flex-shrink: 0; }
+    .ability-label { margin-top: 8px; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+    .ability-size { margin-top: 4px; font: 9px var(--mono); color: var(--muted); }
+    .ability-remove { position: absolute; top: 0; right: 0; width: 32px; height: 32px; border: 0; background: transparent; color: var(--muted); font-size: 19px; }
+    .ability-remove:hover { color: var(--ink); }
+    .ability-note { color: var(--muted); font-size: 11px; margin: 12px 0 0; }
+    .seal-icon { display: block; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; color: var(--accent); }
+    .seal-icon .seal-rim { stroke-width: .8; opacity: .6; }
+    .ability-preview { width: 88px; height: 88px; margin: 12px 0 8px; }
+    .ability-preview:empty { border: 1px dashed var(--line); border-radius: 50%; }
+    .ability-name { font: normal 23px/1.25 var(--heading); overflow-wrap: anywhere; margin: 12px 0 8px; }
+    .ability-detail { font-size: 11px; color: var(--muted); margin: 0 0 22px; }
+    .rune-tooltip { position: fixed; z-index: 30; width: max-content; max-width: min(290px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto; padding: 12px 15px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); box-shadow: 0 8px 25px #00000066; color: var(--ink); font-size: 12px; line-height: 1.65; white-space: pre-line; }
+    .ability-preview .seal-icon { width: 100%; height: 100%; }
+    .piece, .socket, .ability-card { -webkit-touch-callout: none; user-select: none; }
+    .inventory-cell.reserved .inventory-well { stroke: var(--accent); opacity: .45; }
+    .inventory-cell.reserved::after { content: ""; position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); top: 32px; left: calc(50% - 2px); pointer-events: none; }
+    .readout { padding-top: 13px; }
+    .charge-value { display: block; font: normal 56px/1.25 var(--heading); margin: 15px 0 20px; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+    .charge-unit { font: 13px var(--heading); color: var(--muted); margin-left: 6px; letter-spacing: 0; }
+    .action-direction { margin: 0; color: var(--muted); font: 10px var(--mono); letter-spacing: .08em; }
+    .action-scale { position: relative; margin: 8px 0; }
+    .action-axis { position: absolute; left: 34px; top: 17px; bottom: 17px; width: 1px; background: var(--line); }
+    .action-fill { position: absolute; width: 1px; background: var(--accent); transition: top .3s, height .3s; }
+    .action-marker { position: absolute; left: -3px; width: 7px; height: 7px; border: 1px solid var(--accent); background: var(--surface); transform: translateY(-50%) rotate(45deg); transition: top .3s; }
+    .action-scale[data-ready="true"] .action-marker { background: var(--accent); box-shadow: 0 0 9px rgba(var(--accent-rgb), .4); }
+    .action-steps { margin: 0; padding: 0; list-style: none; }
+    .action-step { position: relative; display: flex; align-items: center; min-height: 34px; padding-left: 52px; color: var(--muted); font-size: 12px; }
+    .action-step::before { content: ""; position: absolute; left: 31px; width: 7px; height: 1px; background: var(--line); }
+    .action-value { position: absolute; left: 0; width: 24px; text-align: right; font: 11px var(--mono); }
+    .action-step[aria-current="true"] { color: var(--accent); font-weight: 600; }
+    .charge-scale { height: 30px; position: relative; margin: 0 5px 29px; }
+    .charge-rail { position: absolute; top: 7px; height: 1px; width: 100%; background: var(--line); }
+    .charge-fill { position: absolute; top: 7px; height: 1px; background: var(--accent); transition: left .3s, width .3s; }
+    .tick { position: absolute; top: 5px; width: 1px; height: 5px; background: var(--faint); }
+    .tick.major { top: 2px; height: 11px; background: var(--muted); }
+    .tick-label { position: absolute; top: 19px; font: 9px var(--mono); color: var(--muted); transform: translateX(-50%); }
+    .charge-marker { position: absolute; top: 4px; width: 7px; height: 7px; background: var(--accent); transform: translateX(-50%) rotate(45deg); transition: left .3s; box-shadow: 0 0 10px rgba(var(--accent-rgb), .25); }
+    .readout-line { height: 1px; background: var(--line); margin-bottom: 23px; }
+    .balance-value { display: flex; align-items: center; gap: 9px; margin: 13px 0 8px; font-size: 13px; }
+    .balance-indicator { width: 7px; height: 7px; border: 1px solid var(--muted); border-radius: 50%; }
+    .readout[data-balanced="true"] .balance-indicator { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(var(--accent-rgb), .4); }
+    .balance-tracks { display: grid; gap: 10px; margin-top: 23px; }
+    .balance-track { display: grid; grid-template-columns: 14px 1fr; align-items: center; gap: 9px; color: var(--piece-color); font: 10px var(--mono); }
+    .balance-track-rail { height: 3px; position: relative; background: color-mix(in srgb, var(--piece-color) 10%, transparent); }
+    .balance-track-rail::before { content: ""; position: absolute; left: 50%; top: -3px; width: 1px; height: 9px; background: var(--piece-color); opacity: .4; }
+    .balance-track-fill { position: absolute; height: 3px; top: 0; background: var(--piece-color); opacity: .8; transition: left .3s, width .3s; }
+    .balance-extents { display: flex; justify-content: space-between; color: var(--faint); font: 9px var(--mono); margin: 11px 0 0 23px; }
+    .bottom-bar { margin-top: 35px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: flex-start; gap: 32px; padding-top: 17px; }
+    .science { flex: 1; max-width: 840px; }
+    .science summary { width: fit-content; color: var(--muted); font-size: 11px; cursor: pointer; padding: 5px 0; }
+    .science[open] summary { color: var(--accent); }
+    .science-content { padding: 14px 0 4px; color: var(--muted); font-size: 12px; line-height: 1.8; }
+    .science-content p { margin: 0 0 10px; }
+    .science-result { color: var(--ink); }
+    .colophon { margin: 5px 0 0; text-align: right; color: var(--faint); font: 9px/1.7 var(--mono); letter-spacing: .13em; white-space: nowrap; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+    [data-theme="instrument"] h1 { font-size: 30px; font-weight: 300; letter-spacing: -.04em; }
+    [data-theme="instrument"] body::before { background: radial-gradient(ellipse at 51% 40%, #12314855, transparent 60%); }
+    [data-theme="instrument"] .artifact-only { display: none; }
+    [data-theme="instrument"] .instrument-only { display: initial; }
+    [data-theme="instrument"] .triangle { stroke: var(--blue); }
+    [data-theme="instrument"] .guide { stroke: var(--blue); }
+    [data-theme="instrument"] .outer-ticks { stroke: var(--blue); }
+    [data-theme="instrument"] .result-title { font-size: 22px; font-weight: 300; letter-spacing: -.025em; }
+    [data-theme="instrument"] .palette { background: #07121c80; }
+    [data-theme="instrument"] .piece { border-radius: 6px; }
+    [data-theme="instrument"] .rune-forward .rune-glyph { filter: none; }
+    [data-theme="instrument"] .charge-value { font-family: var(--mono); font-size: 47px; font-weight: 300; }
+    [data-theme="instrument"] .strand { stroke-width: 2; }
+    [data-theme="instrument"] .strand-glow { stroke-width: 8; opacity: .15; }
+    [data-theme="instrument"] .orbit { animation: none !important; }
+    [data-theme="artifact"] .balance-tracks, [data-theme="artifact"] .balance-extents { display: none; }
+    @keyframes orbit-turn { to { transform: rotate(360deg); } }
+    @keyframes release { 0% { opacity: .7; transform: scale(.35); } 100% { opacity: 0; transform: scale(1.5); } }
+    @media (max-width: 1180px) {
+      .shell { padding: 25px 26px 20px; }
+      .workbench { grid-template-columns: 210px minmax(0, 1fr) 160px; gap: 16px; }
+      .library, .readout { padding-top: 12px; }
+      .header-controls { gap: 13px; }
+      .rune { width: 38px; }
+      .charge-value { font-size: 48px; }
+    }
+    @media (max-width: 960px) {
+      .workbench { grid-template-columns: 210px minmax(0, 1fr); column-gap: 28px; }
+      .chamber { grid-column: 2; grid-row: 1 / span 2; }
+      .library { grid-column: 1; grid-row: 1; padding-top: 20px; }
+      .readout { grid-column: 1; grid-row: 2; padding-top: 10px; }
+      .charge-value { font-size: 36px; margin: 5px 0 8px; }
+      .readout-line { margin-bottom: 12px; }
+      .balance-tracks, .balance-extents { display: none; }
+      .charge-scale { margin-bottom: 13px; }
+      .library-note { margin-bottom: 16px; }
+    }
+    @media (max-width: 680px) {
+      .ability-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+      .ability-card, .ability-slot { min-height: 150px; }
+      .ability-card { padding: 16px 5px 10px; }
+      .ability-card .seal-icon { width: 62px; height: 62px; }
+      .ability-label { font-size: 11px; }
+      .ability-remove { width: 40px; height: 40px; }
+      .shell { padding: 20px 20px 16px; }
+      .masthead { flex-wrap: wrap; gap: 20px; padding-bottom: 19px; }
+      .brand { gap: 12px; }
+      h1 { font-size: 31px; }
+      .brand-mark { width: 30px; height: 37px; }
+      .header-controls { width: 100%; justify-content: space-between; }
+      .theme-switch button { padding: 8px 15px; }
+      .workbench { display: flex; flex-direction: column; gap: 0; padding-top: 23px; }
+      .chamber { order: 0; width: 100%; }
+      .field-wrap { width: min(100%, 460px); margin: 0 auto; }
+      .field-status { margin-top: -8px; min-height: 61px; }
+      .result-title { font-size: 24px; }
+      .socket-remove { width: 17px; height: 17px; line-height: 13px; font-size: 13px; opacity: .8; }
+      .socket .piece-charge { font-size: 9px; }
+      .library { order: 1; width: 100%; padding-top: 26px; margin-top: 22px; border-top: 1px solid var(--line); }
+      .palette { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 6px; margin-top: 14px; }
+      .palette-labels { display: none; }
+      .family { padding-bottom: 10px; }
+      .family { border-bottom: 0; }
+      .family-pieces { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; }
+      .piece { padding: 6px 0; }
+      .inventory-cell[data-order="0"] { order: 0; }
+      .inventory-cell[data-order="1"] { order: 2; }
+      .inventory-cell[data-order="2"] { order: 1; }
+      .inventory-cell[data-order="3"] { order: 3; }
+      .rune { width: 43px; height: 54px; }
+      .inventory-well { height: 54px; }
+      .library-note { margin-bottom: 15px; }
+      .examples { padding-top: 0; border: 0; display: flex; align-items: center; gap: 17px; flex-wrap: wrap; }
+      .example-buttons { flex: 1; margin: 0; }
+      .cycle-note { flex-basis: 100%; margin-top: -9px; }
+      .readout { order: 2; display: grid; grid-template-columns: 1fr 1fr; column-gap: 35px; width: 100%; margin-top: 25px; padding-top: 23px; border-top: 1px solid var(--line); }
+      .readout-line { display: none; }
+      [data-theme="instrument"] .readout-line { display: none; }
+      [data-theme="artifact"] .readout { display: block; }
+      .charge-value { font-size: 38px; }
+      [data-theme="instrument"] .charge-value { font-size: 34px; }
+      .balance-value { margin-top: 20px; }
+      .balance-tracks { display: grid; margin-top: 17px; }
+      .bottom-bar { margin-top: 24px; gap: 15px; }
+      .colophon { font-size: 8px; }
+    }
+    @media (max-width: 360px) {
+      .shell { padding-left: 14px; padding-right: 14px; }
+      .theme-switch button { padding-left: 11px; padding-right: 11px; }
+      .palette { gap: 6px; }
+      .sound-button { font-size: 11px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <svg class="sr-only" aria-hidden="true"><defs><symbol id="diceIcon" viewBox="0 0 20 20"><rect x="2.5" y="2.5" width="15" height="15" rx="3"/><circle class="pip" cx="6.5" cy="6.5" r="1.25"/><circle class="pip" cx="13.5" cy="6.5" r="1.25"/><circle class="pip" cx="10" cy="10" r="1.25"/><circle class="pip" cx="6.5" cy="13.5" r="1.25"/><circle class="pip" cx="13.5" cy="13.5" r="1.25"/></symbol></defs></svg>
+    <header class="masthead">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 40 46" aria-hidden="true">
+          <path d="M20 3 37 33H3ZM20 43 3 13H37Z" fill="none" stroke="currentColor" stroke-width=".8"/>
+          <circle cx="20" cy="23" r="5" fill="none" stroke="currentColor"/>
+          <circle cx="20" cy="23" r="1.5" fill="currentColor"/>
+        </svg>
+        <div><h1>Равновесие</h1></div>
+      </div>
+      <div class="header-controls">
+        <div class="theme-switch" role="group" aria-label="Визуальная подача">
+          <button type="button" data-theme-choice="artifact" aria-pressed="true">Алхимия</button>
+          <button type="button" data-theme-choice="instrument" aria-pressed="false">Кварковая модель</button>
+        </div>
+        <button id="toggleSound" class="sound-button" type="button" aria-pressed="true" aria-label="Звук включён. Выключить звук">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M4 9H8L13 5V19L8 15H4Z"/><path class="sound-wave" d="M16 8Q20 12 16 16M19 5Q25 12 19 19"/></svg>
+          <span id="soundLabel">Звук вкл</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="workbench">
+      <section class="library" aria-labelledby="libraryTitle">
+        <div class="section-head"><h2 id="libraryTitle" class="eyebrow">Инвентарь</h2><span id="inventoryCount" class="inventory-count" aria-label="Камней в инвентаре: 12 из 12">12 / 12</span></div>
+        <div class="palette-labels" aria-hidden="true"><span id="forwardLabel">Прямые</span><span id="reverseLabel">Обратные</span></div>
+        <div id="palette" class="palette"></div>
+        <p id="libraryNote" class="library-note">Коснись камня, чтобы поместить в слот.</p>
+        <div class="examples">
+          <p class="eyebrow">Сочетания <svg class="dice" viewBox="0 0 20 20" aria-hidden="true"><use href="#diceIcon"/></svg></p>
+          <div class="example-buttons">
+            <button id="next2" type="button" class="example-button" aria-label="Собрать случайную пару"><span>Пара</span><svg class="dice" viewBox="0 0 20 20" aria-hidden="true"><use href="#diceIcon"/></svg></button>
+            <button id="next3" type="button" class="example-button" aria-label="Собрать случайную тройку"><span>Тройка</span><svg class="dice" viewBox="0 0 20 20" aria-hidden="true"><use href="#diceIcon"/></svg></button>
+          </div>
+          <p id="cycleNote" class="cycle-note"></p>
+        </div>
+      </section>
+
+      <section id="chamber" class="chamber" data-state="empty" aria-label="Поле взаимодействия">
+        <div class="chamber-heading"><p class="eyebrow" id="fieldLabel">Алхимический круг</p></div>
+        <div id="capacity" class="capacity" role="img" aria-label="Свободно мест: 3 из 3" title="Свободно мест: 3 из 3">
+          <span class="capacity-dot" aria-hidden="true"></span>
+          <span class="capacity-dot" aria-hidden="true"></span>
+          <span class="capacity-dot" aria-hidden="true"></span>
+        </div>
+        <div class="field-wrap">
+          <svg id="field" class="field" viewBox="0 0 640 600" role="img" aria-labelledby="fieldTitle fieldDescription">
+            <title id="fieldTitle">Баланс трёх символов и их противоположностей</title>
+            <desc id="fieldDescription">Знаков нет. Фокус в центре.</desc>
+            <defs>
+              <radialGradient id="focusLight"><stop stop-color="var(--accent)" stop-opacity=".25"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></radialGradient>
+              <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="3"/></filter>
+              <filter id="pointGlow" x="-200%" y="-200%" width="500%" height="500%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="3"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <pattern id="fieldGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#79aed0" stroke-opacity=".08" stroke-width=".7"/></pattern>
+              <clipPath id="discClip"><circle cx="320" cy="294" r="245"/></clipPath>
+            </defs>
+            <g aria-hidden="true">
+              <rect class="instrument-only" x="70" y="44" width="500" height="500" fill="url(#fieldGrid)" clip-path="url(#discClip)"/>
+              <g class="engraving artifact-only"><circle cx="320" cy="294" r="251"/><circle cx="320" cy="294" r="239"/><circle cx="320" cy="294" r="190" opacity=".4"/></g>
+              <g id="dialTicks" class="outer-ticks"></g>
+              <g class="orbit artifact-only engraving"><circle class="orbit-detail" cx="320" cy="294" r="231"/><path d="M320 38 326 44 320 50 314 44ZM320 538 326 544 320 550 314 544ZM64 294 70 288 76 294 70 300ZM564 294 570 288 576 294 570 300"/></g>
+              <circle class="engraving instrument-only" cx="320" cy="294" r="245"/>
+              <path class="guide" d="M320 90V498M143.33 192 496.67 396M143.33 396 496.67 192"/>
+              <path class="triangle" d="M320 136 183.17 373 456.83 373Z"/>
+              <path class="triangle triangle-inverse" d="M320 452 183.17 215 456.83 215Z"/>
+              <g class="instrument-only"><text class="instrument-label" x="77" y="565">COLOR SPACE</text><text class="instrument-label" x="492" y="565">Σ → 0</text></g>
+              <g id="strands"></g>
+              <g id="resultSeal" class="result-seal instrument-only"></g>
+              <circle class="target-light" cx="320" cy="294" r="50"/>
+              <circle id="centerTarget" class="center-target" cx="320" cy="294" r="24"/>
+              <circle class="release-ring" cx="320" cy="294" r="100"/>
+              <g id="preview" hidden><path id="previewPath" class="preview-path"/><circle id="previewDot" class="preview-dot" r="5"/><circle id="previewRing" class="preview-ring" r="19"/></g>
+              <g id="focus" transform="translate(320 294)"><circle class="focus-halo" r="28"/><circle class="focus-ring" r="8"/><circle class="focus-dot" r="3.7"/><circle class="focus-seed" r="1.4"/></g>
+              <g id="alchemySeal" class="alchemy-seal artifact-only" transform="translate(270 244)"></g>
+            </g>
+          </svg>
+          <div id="slots" class="slots" role="group" aria-label="Камни на круге, не больше трёх одновременно"></div>
+        </div>
+        <div class="field-status" role="status" aria-live="polite" aria-atomic="true">
+          <h2 id="resultTitle" class="result-title">Всё начинается с касания</h2>
+          <p id="resultDetail" class="result-detail">Выбери любое начертание</p>
+        </div>
+        <div class="assembly-controls"><span id="slotCount">0 / 3 камня</span><button id="reset" class="reset" type="button" disabled>Очистить ↺</button></div>
+        <div class="bind-space"><button id="bindSeal" class="bind-seal" type="button" hidden>Закрепить печать</button></div>
+      </section>
+
+      <aside id="readout" class="readout" data-balanced="false" aria-label="Показания">
+        <section class="instrument-only" aria-labelledby="chargeTitle">
+          <h2 id="chargeTitle" class="eyebrow">Электрический заряд</h2>
+          <div class="charge-value"><span id="chargeValue">0</span><span class="charge-unit">e</span></div>
+          <div class="charge-scale" aria-hidden="true"><div class="charge-rail"></div><div id="chargeFill" class="charge-fill"></div><div id="ticks"></div><div id="chargeMarker" class="charge-marker"></div></div>
+        </section>
+        <section class="artifact-only" aria-labelledby="abilityHeading">
+          <h2 id="abilityHeading" class="eyebrow">Результат</h2>
+          <div id="abilityPreview" class="ability-preview" aria-hidden="true"></div>
+          <h3 id="abilityName" class="ability-name">Печать не собрана</h3>
+          <p id="abilityDetail" class="ability-detail">Приведи знаки в равновесие.</p>
+          <p class="action-direction">К себе</p>
+          <div id="actionScale" class="action-scale" data-ready="false">
+            <ol id="actionSteps" class="action-steps" aria-label="Шкала действий"></ol>
+            <div class="action-axis" aria-hidden="true"><div id="actionFill" class="action-fill" hidden></div><div id="actionMarker" class="action-marker" hidden></div></div>
+          </div>
+          <p class="action-direction">От себя</p>
+        </section>
+        <div class="readout-line instrument-only"></div>
+        <section class="instrument-only" aria-labelledby="balanceTitle">
+          <h2 id="balanceTitle" class="eyebrow">Цветовой баланс</h2>
+          <div class="balance-value"><span class="balance-indicator" aria-hidden="true"></span><span id="balanceValue">Нет кварков</span></div>
+          <div id="balanceTracks" class="balance-tracks" aria-hidden="true"></div>
+          <div class="balance-extents" aria-hidden="true"><span>антицвет</span><span>цвет</span></div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="abilities" aria-labelledby="abilitiesTitle">
+      <div class="section-head"><h2 id="abilitiesTitle" class="eyebrow">Панель способностей</h2><span id="abilityCount" class="inventory-count">0 / 6</span></div>
+      <ol id="abilityBar" class="ability-bar"></ol>
+      <p id="abilityNote" class="ability-note">Закрепи готовую печать. Её руны останутся заняты до разбора.</p>
+    </section>
+    <footer class="bottom-bar">
+      <details class="science">
+        <summary id="scienceSummary">Что скрыто внутри</summary>
+        <div class="science-content">
+          <p id="physicalResult" class="science-result">За начертаниями скрываются кварки и антикварки.</p>
+          <p>Три семейства обозначают цветовые заряды, противоположные направления соответствуют цвету и антицвету. В «Схеме» используются обозначения u, d и антикварков с чертой сверху. Размер значка показывает модуль электрического заряда, не массу и не физический размер кварка.</p>
+          <p>Пара «цвет + антицвет» и тройка разных цветов дают здесь замкнутую связь. Это наглядная модель правил сочетания, вдохновлённая квантовой хромодинамикой, а не её симуляция. Центр диаграммы иллюстрирует компенсацию; квантовые состояния, спин и динамика сильного взаимодействия не моделируются.</p>
+        </div>
+      </details>
+      <p class="colophon">QCD / ИНТЕРАКТИВНЫЙ ЭТЮД<br><span id="editionLabel">01 · АЛХИМИЯ</span></p>
+    </footer>
+    <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
+  </main>
+  <div id="runeTooltip" class="rune-tooltip" role="tooltip" hidden></div>
+  <script>
+    'use strict';
+
+    const pieces = [
+      { id: 'u-r', flavor: 'u', charge: 2, color: 'red', anti: false },
+      { id: 'u-g', flavor: 'u', charge: 2, color: 'green', anti: false },
+      { id: 'u-b', flavor: 'u', charge: 2, color: 'blue', anti: false },
+      { id: 'd-r', flavor: 'd', charge: -1, color: 'red', anti: false },
+      { id: 'd-g', flavor: 'd', charge: -1, color: 'green', anti: false },
+      { id: 'd-b', flavor: 'd', charge: -1, color: 'blue', anti: false },
+      { id: 'au-r', flavor: 'u', charge: -2, color: 'red', anti: true },
+      { id: 'au-g', flavor: 'u', charge: -2, color: 'green', anti: true },
+      { id: 'au-b', flavor: 'u', charge: -2, color: 'blue', anti: true },
+      { id: 'ad-r', flavor: 'd', charge: 1, color: 'red', anti: true },
+      { id: 'ad-g', flavor: 'd', charge: 1, color: 'green', anti: true },
+      { id: 'ad-b', flavor: 'd', charge: 1, color: 'blue', anti: true }
+    ];
+    const byId = Object.fromEntries(pieces.map(piece => [piece.id, piece]));
+    const colors = ['red', 'green', 'blue'];
+    const colorNames = { red: 'красный', green: 'зелёный', blue: 'синий' };
+    const families = {
+      red: { label: 'Ψ', name: 'пси', roman: 'I', path: 'M24 37V14M13 16V22Q13 28 24 28Q35 28 35 22V16' },
+      green: { label: 'ϟ', name: 'молния', roman: 'II', path: 'M29 10 16 25H25L19 38 33 21H24Z' },
+      blue: { label: '⟡', name: 'ромб', roman: 'III', path: 'M24 9Q21 21 12 24Q21 27 24 39Q27 27 36 24Q27 21 24 9Z' }
+    };
+    const vectors = { red: { x: 0, y: -1 }, green: { x: -Math.sqrt(3) / 2, y: .5 }, blue: { x: Math.sqrt(3) / 2, y: .5 } };
+    const center = { x: 320, y: 294 };
+    const vectorScale = 54;
+    const recipes2 = [], recipes3 = [];
+    // Sample every valid inventory combination, not just one colour realization.
+    for (let a = 0; a < pieces.length; a++) {
+      for (let b = a + 1; b < pieces.length; b++) {
+        const pair = [pieces[a].id, pieces[b].id];
+        if (analyzeCombination(pair).valid) recipes2.push(pair);
+        for (let c = b + 1; c < pieces.length; c++) {
+          const triple = [...pair, pieces[c].id];
+          if (analyzeCombination(triple).valid) recipes3.push(triple);
+        }
+      }
+    }
+    let slots = [null, null, null];
+    const abilities = Array(6).fill(null);
+    const actions = [
+      { id: 'compression', name: 'Сжатие', genitive: 'сжатия', detail: 'Собирает вещество в плотное целое.', path: 'M31 31 43 43M36 43H43V36M69 31 57 43M57 36V43H64M31 69 43 57M36 57H43V64M69 69 57 57M57 64V57H64M50 44 56 50 50 56 44 50Z' },
+      { id: 'attraction', name: 'Притяжение', genitive: 'притяжения', detail: 'Притягивает предмет к игроку, сохраняя его форму.', path: 'M28 50H43L37 44M43 50 37 56M72 50H57L63 44M57 50 63 56' },
+      { id: 'holding', name: 'Удержание', genitive: 'удержания', detail: 'Закрепляет предмет на месте.', path: 'M38 38H62V62H38ZM50 28V38M50 62V72M28 50H38M62 50H72' },
+      { id: 'repulsion', name: 'Отталкивание', genitive: 'отталкивания', detail: 'Отталкивает предмет от игрока как единое целое.', path: 'M43 50H28L34 44M28 50 34 56M57 50H72L66 44M72 50 66 56' },
+      { id: 'dispersion', name: 'Рассеивание', genitive: 'рассеивания', detail: 'Распыляет вещество в пространстве.', path: 'M43 43 31 31M31 38V31H38M57 43 69 31M62 31H69V38M43 57 31 69M31 62V69H38M57 57 69 69M62 69H69V62' }
+    ];
+    const kindNames = { meson: 'Мезон', baryon: 'Барион', antibaryon: 'Антибарион' };
+    let soundEnabled = true;
+    let audio = null;
+    let previousKey = '';
+    let arrivalTimer = 0;
+    let frame = 0;
+    let strandElements = [];
+    const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+    const motion = { from: { ...center }, target: { ...center }, startedAt: -Infinity, duration: 460 };
+    const $ = id => document.getElementById(id);
+
+    function reservedIds() {
+      return abilities.filter(Boolean).flat();
+    }
+
+    function abilityInfo(ids) {
+      const small = ids.length === 2;
+      const action = actions[totalThirds(ids) / 3 + 2];
+      return { action, small, label: small ? `Малое ${action.name.toLowerCase()}` : action.name,
+        full: `${small ? 'Малая' : 'Большая'} печать ${action.genitive}` };
+    }
+
+    function sealIcon(ids) {
+      const { action, small } = abilityInfo(ids);
+      return `<svg class="seal-icon" data-action="${action.id}" data-size="${small ? 'small' : 'large'}" width="100" height="100" viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="seal-rim" cx="50" cy="50" r="${small ? 32 : 40}"/>
+        ${small ? '' : '<circle class="seal-rim" cx="50" cy="50" r="35"/><path class="seal-rim" d="M50 5V14M11 73 19 69M89 73 81 69"/>'}
+        <path d="${action.path}"/><circle cx="50" cy="50" r="2" fill="currentColor" stroke="none"/>
+      </svg>`;
+    }
+
+    function compositionIcon(ids) {
+      return `<svg class="seal-icon" viewBox="0 0 100 100" aria-hidden="true">${ids.length === 2
+        ? '<ellipse cx="50" cy="50" rx="32" ry="17" transform="rotate(-35 50 50)"/><ellipse cx="50" cy="50" rx="32" ry="17" transform="rotate(35 50 50)"/>'
+        : '<path d="M50 16 20 68H80Z"/><circle cx="50" cy="50" r="17"/>'}</svg>`;
+    }
+
+    function fractionText(n) {
+      if (n === 0) return '0';
+      const sign = n < 0 ? '−' : '+';
+      const absolute = Math.abs(n);
+      if (absolute % 3 === 0) return sign + absolute / 3;
+      return sign + (absolute < 3 ? `${absolute}/3` : `${Math.floor(absolute / 3)} ${absolute % 3}/3`);
+    }
+
+    function colorVector(ids = slots) {
+      return ids.filter(Boolean).reduce((sum, id) => {
+        const piece = byId[id];
+        const sign = piece.anti ? -1 : 1;
+        return { x: sum.x + vectors[piece.color].x * sign, y: sum.y + vectors[piece.color].y * sign };
+      }, { x: 0, y: 0 });
+    }
+
+    function totalThirds(ids = slots) {
+      return ids.reduce((sum, id) => sum + (id ? byId[id].charge : 0), 0);
+    }
+
+    function analyzeCombination(ids = slots) {
+      const chosen = ids.filter(Boolean).map(id => byId[id]);
+      if (chosen.length < 2) return { valid: false, kind: '', analog: '' };
+      if (chosen.length === 2) {
+        const quark = chosen.find(piece => !piece.anti);
+        const anti = chosen.find(piece => piece.anti);
+        if (!quark || !anti || quark.color !== anti.color) return { valid: false, kind: '', analog: '' };
+        const neutral = quark.flavor === anti.flavor;
+        const sign = quark.flavor === 'u' ? '⁺' : '⁻';
+        const examples = neutral ? ['нейтральный пион π⁰ (компонент)', 'нейтральный ρ-мезон ρ⁰ (компонент)'] : [`пион π${sign}`, `ρ-мезон ρ${sign}`];
+        const note = neutral ? 'Пары uū и dd̄ входят в суперпозиции. Отдельная пара не определяет нейтральный мезон.' : '';
+        return { valid: true, kind: 'meson', analog: examples.join(' / '), examples, note };
+      }
+      const sameKind = chosen.every(piece => piece.anti === chosen[0].anti);
+      if (chosen.length !== 3 || !sameKind || new Set(chosen.map(piece => piece.color)).size !== 3) return { valid: false, kind: '', analog: '' };
+      const up = chosen.filter(piece => piece.flavor === 'u').length;
+      const examples = (chosen[0].anti
+        ? [['античастица Δ⁻, заряд +1 e'], ['антинейтрон', 'античастица Δ⁰, заряд 0 e'], ['антипротон', 'античастица Δ⁺, заряд −1 e'], ['античастица Δ⁺⁺, заряд −2 e']]
+        : [['Δ⁻'], ['нейтрон', 'Δ⁰'], ['протон', 'Δ⁺'], ['Δ⁺⁺']])[up];
+      return { valid: true, kind: chosen[0].anti ? 'antibaryon' : 'baryon', analog: examples.join(' / '), examples, note: '' };
+    }
+
+    function runeHTML(piece, insideField = false) {
+      const magnitude = Math.abs(piece.charge);
+      const size = insideField || magnitude === 2 ? 1 : .57;
+      const tag = insideField ? 'g' : 'svg';
+      return `<${tag} class="rune rune-${piece.anti ? 'reverse' : 'forward'} magnitude-${magnitude}" ${insideField ? '' : 'viewBox="0 0 48 54"'} aria-hidden="true" focusable="false">
+        <g class="${insideField ? 'rune-etching' : 'rune-stone'}" transform="translate(24 26) scale(${size}) translate(-24 -26)">
+          <path class="rune-frame" d="M24 2 44 14V38L24 50 4 38V14Z"/>
+          ${insideField || magnitude === 1 ? '' : '<path class="stone-face" d="M24 8 39 17V35L24 44 9 35V17Z"/>'}
+          <path class="rune-glyph artifact-only" d="${families[piece.color].path}" transform="translate(0 1)"/>
+          <text class="quark-glyph instrument-only" x="24" y="32">${piece.flavor || piece.color[0]}${piece.anti ? '\u0304' : ''}</text>
+          ${insideField ? '' : `<circle class="rune-mark" cx="${magnitude === 2 ? 21 : 24}" cy="46" r="1"/>${magnitude === 2 ? '<circle class="rune-mark" cx="27" cy="46" r="1"/>' : ''}`}
+        </g>
+      </${tag}>`;
+    }
+
+    function pieceName(piece) {
+      if (document.documentElement.dataset.theme === 'artifact') {
+        return `${piece.anti ? 'Обратный' : 'Прямой'} знак ${families[piece.color].name}. ${piece.charge < 0 ? 'К себе' : 'От себя'}: ${Math.abs(piece.charge)}/3`;
+      }
+      const color = `${piece.anti ? 'анти' : ''}${colorNames[piece.color]}`;
+      return `${color[0].toUpperCase() + color.slice(1)} ${piece.flavor}-${piece.anti ? 'антикварк' : 'кварк'}, заряд ${fractionText(piece.charge)} e`;
+    }
+
+    function runeDescription(piece) {
+      const size = Math.abs(piece.charge) === 2 ? 'Большой камень' : 'Малый камень';
+      if (document.documentElement.dataset.theme === 'artifact') return `${families[piece.color].label} · ${size}\n${pieceName(piece)}`;
+      return `${pieceName(piece)}\nАромат: ${piece.flavor === 'u' ? 'u (верхний)' : 'd (нижний)'}.\nРазмер значка обозначает модуль заряда, не массу.`;
+    }
+
+    const inspectSelector = '.piece[data-id], .socket[data-piece], .socket-target[data-insert], [data-inspect], .ability-card[data-ability]';
+    let tooltipTarget = null;
+    let press = null;
+    let pressTimer = 0;
+    let suppressedTarget = null;
+    let pointerFocus = false;
+    let tooltipHideTimer = 0;
+
+    function hideTooltip() {
+      clearTimeout(tooltipHideTimer);
+      tooltipTarget?.removeAttribute('aria-describedby');
+      tooltipTarget = null;
+      $('runeTooltip').hidden = true;
+    }
+
+    function showTooltip(target) {
+      hideTooltip();
+      if (!target?.isConnected) return;
+      let text;
+      if (target.hasAttribute('data-ability')) {
+        const ids = abilities[Number(target.dataset.ability)];
+        if (!ids) return;
+        const info = abilityInfo(ids);
+        const artifact = document.documentElement.dataset.theme === 'artifact';
+        text = artifact ? `${info.full}\n${info.action.detail}` : `${kindNames[analyzeCombination(ids).kind]} · заряд ${fractionText(totalThirds(ids))} e`;
+        text += '\n\nСостав:\n' + ids.map(id => pieceName(byId[id])).join('\n');
+        if (!artifact) {
+          const result = analyzeCombination(ids);
+          const formula = ids.map(id => byId[id]).sort((a, b) => Number(a.anti) - Number(b.anti) || b.flavor.localeCompare(a.flavor)).map(piece => piece.flavor + (piece.anti ? '\u0304' : '')).join('');
+          text += `\n\nВалентный состав: ${formula}\nПримеры частиц${result.note ? ' с таким компонентом' : ' с таким составом'}:\n`;
+          text += result.examples.map(name => `• ${name}`).join('\n');
+          if (result.note) text += `\n\n${result.note}`;
+        }
+      } else {
+        const id = target.dataset.id || target.dataset.piece || target.dataset.insert || target.dataset.inspect;
+        if (!byId[id]) return;
+        text = runeDescription(byId[id]);
+        if (reservedIds().includes(id)) text += '\nВ закреплённом составе.';
+      }
+      const tooltip = $('runeTooltip');
+      tooltip.textContent = text;
+      tooltip.hidden = false;
+      tooltipTarget = target;
+      target.setAttribute('aria-describedby', 'runeTooltip');
+      const anchor = target.getBoundingClientRect();
+      const box = tooltip.getBoundingClientRect();
+      tooltip.style.left = `${Math.max(12, Math.min(innerWidth - box.width - 12, anchor.x + anchor.width / 2 - box.width / 2))}px`;
+      const top = anchor.top - box.height - 12;
+      tooltip.style.top = `${Math.max(12, Math.min(innerHeight - box.height - 12, top >= 12 ? top : anchor.bottom + 12))}px`;
+    }
+
+    function cancelPress() {
+      clearTimeout(pressTimer);
+      press = null;
+    }
+
+    function renderPalette() {
+      $('palette').innerHTML = colors.map(color => {
+        const familyPieces = ['u', 'd', 'au', 'ad'].map(prefix => byId[`${prefix}-${color[0]}`]);
+        return `<div class="family ${color}"><div class="family-head" aria-hidden="true"><span>${families[color].roman}</span><span class="family-line"></span></div>
+          <div class="family-pieces">${familyPieces.map((piece, index) => `<div class="inventory-cell" data-order="${index}"><svg class="inventory-well" viewBox="0 0 48 54" aria-hidden="true"><path d="M24 2 44 14V38L24 50 4 38V14Z" transform="translate(24 26) scale(${Math.abs(piece.charge) === 2 ? 1 : .57}) translate(-24 -26)"/></svg><button class="piece ${color}" type="button" data-id="${piece.id}" aria-label="Добавить: ${pieceName(piece)}" aria-disabled="false">${runeHTML(piece)}<span class="piece-charge">${fractionText(piece.charge)}</span></button></div>`).join('')}</div></div>`;
+      }).join('');
+      $('palette').addEventListener('click', event => {
+        const button = event.target.closest('[data-id]');
+        if (button) addPiece(button.dataset.id);
+      });
+      $('palette').addEventListener('pointerover', event => {
+        if (event.pointerType === 'touch') return;
+        const button = event.target.closest('[data-id]');
+        if (button) showPreview(button.dataset.id);
+        else clearPreview();
+      });
+      $('palette').addEventListener('pointerleave', clearPreview);
+      $('palette').addEventListener('focusin', event => {
+        const button = event.target.closest('[data-id]');
+        if (button) showPreview(button.dataset.id);
+      });
+      $('palette').addEventListener('focusout', clearPreview);
+    }
+
+    function renderSlots() {
+      const artifact = document.documentElement.dataset.theme === 'artifact';
+      const valid = analyzeCombination().valid;
+      const count = slots.filter(Boolean).length;
+      $('slots').innerHTML = colors.flatMap(color => [false, true].map(anti => {
+        const sign = anti ? -1 : 1;
+        const x = center.x + vectors[color].x * sign * 208;
+        const y = center.y + vectors[color].y * sign * 208;
+        const indices = slots.flatMap((id, index) => id && byId[id].color === color && byId[id].anti === anti ? [index] : []);
+        const sockets = (indices.length ? indices : [null]).map(index => {
+          const piece = index === null ? null : byId[slots[index]];
+          const axisName = artifact ? `${anti ? 'Обратный' : 'Прямой'} знак ${families[color].name}` : `${anti ? 'Антицвет' : 'Цвет'}: ${colorNames[color]}`;
+          const label = piece ? `Убрать: ${pieceName(piece)}` : `${axisName}, гнездо свободно`;
+          const content = piece ? runeHTML(piece) + '<span class="socket-remove" aria-hidden="true">×</span>'
+            : `<svg class="socket-ghost" viewBox="0 0 48 54" aria-hidden="true">${runeHTML({ color, anti, charge: 2 }, true)}</svg>`;
+          const targets = piece ? '' : ['u', 'd'].map(flavor => {
+            const candidate = byId[`${anti ? 'a' : ''}${flavor}-${color[0]}`];
+            const large = flavor === 'u';
+            return `<button class="socket-target socket-target-${large ? 'large' : 'small'}" type="button" data-insert="${candidate.id}" ${count === slots.length || reservedIds().includes(candidate.id) ? 'disabled' : ''} aria-label="Добавить ${artifact ? `${large ? 'большой' : 'малый'} камень: ` : ''}${pieceName(candidate)}"></button>`;
+          }).join('');
+          const tag = piece ? 'button' : 'div';
+          return `<${tag} class="socket ${piece ? 'filled' : `empty ${valid ? 'optional' : ''}`}" ${piece ? `type="button" data-slot="${index}" data-piece="${piece.id}" data-size="${Math.abs(piece.charge) === 2 ? 'large' : 'small'}"` : 'role="group"'} aria-label="${label}">
+            <span class="socket-face"><svg class="socket-outlines" viewBox="0 0 76 82" aria-hidden="true"><path class="socket-outline-large" d="M38 3 71 22V60L38 79 5 60V22Z"/><path class="socket-outline-small" d="M38 3 71 22V60L38 79 5 60V22Z" transform="translate(38 41) scale(.57) translate(-38 -41)"/></svg>${content}<svg class="socket-highlight" viewBox="0 0 76 82" aria-hidden="true"><path d="M38 3 71 22V60L38 79 5 60V22Z"/></svg></span>
+            ${piece ? `<span class="piece-charge">${fractionText(piece.charge)}</span>` : targets}</${tag}>`;
+        }).join('');
+        return `<div class="orbit-slot axis-node ${color} ${indices.length ? 'active' : ''} ${indices.length > 1 ? 'multiple' : ''}" data-axis="${color}-${anti}" style="left:${x / 640 * 100}%;top:${y / 600 * 100}%">${sockets}</div>`;
+      })).join('');
+      $('slotCount').textContent = artifact ? `${count} / 3 камня` : `Компоненты: ${count} / 3`;
+      const capacityLabel = `Свободно мест: ${slots.length - count} из ${slots.length}`;
+      $('capacity').setAttribute('aria-label', capacityLabel);
+      $('capacity').title = capacityLabel;
+      [...$('capacity').children].forEach((dot, index) => dot.classList.toggle('spent', index < count));
+      $('reset').disabled = count === 0;
+      const reserved = reservedIds();
+      const free = pieces.length - count - reserved.length;
+      $('inventoryCount').textContent = `${free} / ${pieces.length}`;
+      $('inventoryCount').setAttribute('aria-label', `${artifact ? 'Свободных камней' : 'Доступных кварков и антикварков'}: ${free} из ${pieces.length}. Закреплено: ${reserved.length}.`);
+      document.querySelectorAll('.piece').forEach(button => {
+        const taken = slots.includes(button.dataset.id) || reserved.includes(button.dataset.id);
+        const cell = button.parentElement;
+        const locked = reserved.includes(button.dataset.id);
+        cell.classList.toggle('reserved', locked);
+        if (locked) {
+          cell.dataset.inspect = button.dataset.id;
+          cell.tabIndex = 0;
+          cell.setAttribute('role', 'img');
+          cell.setAttribute('aria-label', `${pieceName(byId[button.dataset.id])}. В закреплённом составе.`);
+        } else {
+          delete cell.dataset.inspect;
+          cell.removeAttribute('tabindex');
+          cell.removeAttribute('role');
+          cell.removeAttribute('aria-label');
+        }
+        button.setAttribute('aria-label', `Добавить: ${pieceName(byId[button.dataset.id])}`);
+        button.classList.toggle('in-use', taken);
+        button.disabled = taken;
+        button.setAttribute('aria-disabled', String(taken || count === 3));
+      });
+      for (const size of [2, 3]) $('next' + size).disabled = !availableRecipes(size).length;
+    }
+
+    function renderAbilities() {
+      const artifact = document.documentElement.dataset.theme === 'artifact';
+      $('abilitiesTitle').textContent = artifact ? 'Панель способностей' : 'Собранные состояния';
+      $('abilityNote').textContent = artifact ? 'Закрепи готовую печать. Её руны останутся заняты до разбора.' : 'Сохрани сочетание. Его компоненты останутся заняты до разбора.';
+      $('abilityCount').textContent = `${abilities.filter(Boolean).length} / 6`;
+      $('abilityBar').innerHTML = abilities.map((ids, index) => {
+        if (!ids) return `<li class="ability-slot empty" aria-label="Свободное место ${index + 1}"><span aria-hidden="true">${String(index + 1).padStart(2, '0')}</span></li>`;
+        const info = abilityInfo(ids);
+        const physical = `${kindNames[analyzeCombination(ids).kind]} · ${fractionText(totalThirds(ids))} e`;
+        return `<li class="ability-slot filled"><button type="button" class="ability-card" data-ability="${index}" aria-label="${artifact ? info.full : physical}. Показать состав">
+          ${artifact ? sealIcon(ids) : compositionIcon(ids)}<span class="ability-label">${artifact ? info.label : physical}</span><span class="ability-size">${ids.length} ${artifact ? 'руны' : 'компонента'}</span></button>
+          <button class="ability-remove" type="button" data-release="${index}" aria-label="Разобрать: ${artifact ? info.full : physical}">×</button></li>`;
+      }).join('');
+      $('bindSeal').hidden = !analyzeCombination().valid;
+      $('bindSeal').textContent = artifact ? 'Закрепить печать' : 'Сохранить сочетание';
+    }
+
+    function bindSeal() {
+      const ids = slots.filter(Boolean);
+      const index = abilities.indexOf(null);
+      if (index < 0 || !analyzeCombination(ids).valid || ids.some(id => reservedIds().includes(id))) return;
+      abilities[index] = [...ids];
+      slots = [null, null, null];
+      $('cycleNote').textContent = '';
+      stopVoices();
+      render();
+      const card = $('abilityBar').querySelector(`[data-ability="${index}"]`);
+      $('announcement').textContent = `Сохранено: ${card.querySelector('.ability-label').textContent}. Компоненты закреплены.`;
+      card.focus({ preventScroll: pointerFocus });
+    }
+
+    function releaseAbility(index) {
+      const ids = abilities[index];
+      if (!ids) return;
+      abilities[index] = null;
+      render();
+      $('announcement').textContent = `Возвращено ${document.documentElement.dataset.theme === 'artifact' ? 'камней' : 'компонентов'}: ${ids.length}.`;
+      document.querySelector(`.piece[data-id="${ids[0]}"]`).focus({ preventScroll: pointerFocus });
+      clearPreview();
+    }
+
+    function renderDial() {
+      $('dialTicks').innerHTML = Array.from({ length: 90 }, (_, i) => {
+        const angle = i * Math.PI * 2 / 90;
+        const major = i % 5 === 0;
+        const radius = major ? 242 : 246;
+        return `<line class="${major ? 'major-ticks' : ''}" x1="${center.x + Math.sin(angle) * radius}" y1="${center.y - Math.cos(angle) * radius}" x2="${center.x + Math.sin(angle) * 250}" y2="${center.y - Math.cos(angle) * 250}"/>`;
+      }).join('');
+      $('ticks').innerHTML = Array.from({ length: 13 }, (_, index) => {
+        const n = index - 6;
+        return `<span class="tick ${n % 3 === 0 ? 'major' : ''}" style="left:${index / 12 * 100}%"></span>${n % 3 === 0 ? `<span class="tick-label" style="left:${index / 12 * 100}%">${fractionText(n)}</span>` : ''}`;
+      }).join('');
+      $('balanceTracks').innerHTML = colors.map(color => `<div class="balance-track ${color}"><span>${color[0]}</span><div class="balance-track-rail"><span id="track-${color}" class="balance-track-fill"></span></div></div>`).join('');
+    }
+
+    function currentPosition(now) {
+      const t = motionPreference.matches ? 1 : Math.min(1, Math.max(0, (now - motion.startedAt) / motion.duration));
+      const eased = 1 - Math.pow(1 - t, 4);
+      return { x: motion.from.x + (motion.target.x - motion.from.x) * eased, y: motion.from.y + (motion.target.y - motion.from.y) * eased,
+        moving: t < 1 && Math.hypot(motion.target.x - motion.from.x, motion.target.y - motion.from.y) > .001 };
+    }
+
+    function animateField(time) {
+      frame = 0;
+      const point = currentPosition(time);
+      const valid = $('chamber').dataset.state === 'balanced';
+      $('focus').setAttribute('transform', `translate(${point.x} ${point.y})`);
+      strandElements.forEach(({ element, glow, anchor, index }) => {
+        const dx = point.x - anchor.x;
+        const dy = point.y - anchor.y;
+        const length = Math.max(1, Math.hypot(dx, dy));
+        const wave = !motionPreference.matches && valid ? Math.sin(time * .003 + index * 2.1) * 4 : 0;
+        const bend = wave + (index - 1) * 5;
+        const path = `M${anchor.x} ${anchor.y}Q${(anchor.x + point.x) / 2 - dy / length * bend} ${(anchor.y + point.y) / 2 + dx / length * bend} ${point.x} ${point.y}`;
+        element.setAttribute('d', path);
+        glow.setAttribute('d', path);
+      });
+      if (!document.hidden && !motionPreference.matches && (point.moving || valid)) frame = requestAnimationFrame(animateField);
+    }
+
+    function renderField(result) {
+      const chosen = slots.filter(Boolean).map(id => byId[id]);
+      const vector = colorVector();
+      const now = performance.now();
+      motion.from = currentPosition(now);
+      motion.target = { x: center.x + vector.x * vectorScale, y: center.y + vector.y * vectorScale };
+      // A completed seal and its strands must agree on the very first rendered frame.
+      if (result.valid || !chosen.length) motion.from = { ...motion.target };
+      motion.startedAt = now;
+      $('strands').innerHTML = chosen.map(piece => `<path class="strand strand-glow ${piece.color}"/><path class="strand ${piece.color} ${piece.anti ? 'reverse' : ''}"/>`).join('');
+      const screenToField = $('field').getScreenCTM().inverse();
+      strandElements = chosen.map((piece, index) => {
+        const sign = piece.anti ? -1 : 1;
+        const socket = $('slots').querySelector(`[data-piece="${piece.id}"] .socket-face`).getBoundingClientRect();
+        const { x, y } = new DOMPoint(socket.x + socket.width / 2, socket.y + socket.height / 2).matrixTransform(screenToField);
+        return { glow: $('strands').children[index * 2], element: $('strands').children[index * 2 + 1], index,
+          anchor: { x: x - vectors[piece.color].x * sign * 30, y: y - vectors[piece.color].y * sign * 30 } };
+      });
+      const charge = totalThirds();
+      const radius = 35 + Math.abs(charge) * 2;
+      const reverse = result.kind === 'antibaryon' ? -1 : 1;
+      if (result.valid) {
+        const shape = result.kind === 'meson'
+          ? `<ellipse cx="320" cy="294" rx="${radius}" ry="${radius * .56}" transform="rotate(-35 320 294)"/><ellipse cx="320" cy="294" rx="${radius}" ry="${radius * .56}" transform="rotate(35 320 294)"/>`
+          : `<path d="M320 ${294 - radius * reverse} ${320 - radius * .866} ${294 + radius * .5 * reverse} ${320 + radius * .866} ${294 + radius * .5 * reverse}Z"/><circle cx="320" cy="294" r="${radius * .53}"/>`;
+        $('resultSeal').innerHTML = `<circle cx="320" cy="294" r="${radius + 12}" stroke-dasharray="1 8"/>${shape}`;
+      } else $('resultSeal').innerHTML = '';
+      $('alchemySeal').innerHTML = result.valid ? sealIcon(slots.filter(Boolean))
+        : '<svg class="seal-icon" width="100" height="100" viewBox="0 0 100 100" aria-hidden="true"><path class="seal-rim" d="M18 50A32 32 0 0 1 50 18M82 50A32 32 0 0 1 50 82" stroke-dasharray="2 5"/></svg>';
+      if (frame) cancelAnimationFrame(frame);
+      animateField(now);
+    }
+
+    function renderReadout(result) {
+      const n = totalThirds();
+      const pct = (n + 6) / 12 * 100;
+      $('chargeValue').textContent = fractionText(n);
+      $('chargeMarker').style.left = `${pct}%`;
+      $('chargeFill').style.left = `${Math.min(50, pct)}%`;
+      $('chargeFill').style.width = `${Math.abs(pct - 50)}%`;
+      $('readout').dataset.balanced = String(result.valid);
+      const info = result.valid ? abilityInfo(slots.filter(Boolean)) : null;
+      $('abilityPreview').innerHTML = info ? sealIcon(slots.filter(Boolean)) : '';
+      $('abilityName').textContent = info ? info.label : 'Печать не собрана';
+      $('abilityDetail').textContent = info ? `${info.small ? 'Малая' : 'Большая'} печать. ${info.action.detail}` : 'Приведи знаки в равновесие.';
+      const count = slots.filter(Boolean).length;
+      $('actionScale').dataset.ready = String(result.valid);
+      $('actionSteps').innerHTML = actions.map((action, index) => `<li class="action-step"${info?.action.id === action.id ? ' aria-current="true"' : ''}><span class="action-value">${fractionText((index - 2) * 3)}</span> <span class="action-name">${action.name}</span></li>`).join('');
+      $('actionMarker').hidden = $('actionFill').hidden = count === 0;
+      $('actionMarker').style.top = `${pct}%`;
+      $('actionFill').style.top = `${Math.min(50, pct)}%`;
+      $('actionFill').style.height = `${Math.abs(pct - 50)}%`;
+      $('balanceValue').textContent = !count ? 'Нет кварков' : result.valid ? 'Скомпенсирован' : 'Не скомпенсирован';
+      const raw = colors.map(color => slots.filter(Boolean).reduce((sum, id) => sum + (byId[id].color === color ? (byId[id].anti ? -1 : 1) : 0), 0));
+      // Remove the shared component: three equal colour counts also cancel.
+      const mean = raw.reduce((sum, value) => sum + value, 0) / 3;
+      colors.forEach((color, index) => {
+        const residual = (raw[index] - mean) / 2 * 50;
+        $(`track-${color}`).style.left = `${Math.min(50, 50 + residual)}%`;
+        $(`track-${color}`).style.width = `${Math.abs(residual)}%`;
+      });
+    }
+
+    function showPreview(id) {
+      if (!slots.includes(null) || slots.includes(id) || reservedIds().includes(id)) return clearPreview();
+      const future = [...slots];
+      future[future.indexOf(null)] = id;
+      const vector = colorVector(future);
+      const x = center.x + vector.x * vectorScale;
+      const y = center.y + vector.y * vectorScale;
+      const piece = byId[id];
+      $('preview').setAttribute('class', piece.color);
+      $('preview').removeAttribute('hidden');
+      $('previewPath').setAttribute('d', `M${motion.target.x} ${motion.target.y}L${x} ${y}`);
+      for (const name of ['previewDot', 'previewRing']) {
+        $(name).setAttribute('cx', x);
+        $(name).setAttribute('cy', y);
+      }
+      $('previewRing').style.display = analyzeCombination(future).valid ? '' : 'none';
+      document.querySelectorAll('[data-axis]').forEach(node => {
+        if (node.dataset.axis === `${piece.color}-${piece.anti}`) node.dataset.previewSize = Math.abs(piece.charge) === 2 ? 'large' : 'small';
+        else delete node.dataset.previewSize;
+      });
+    }
+
+    function clearPreview() {
+      $('preview').setAttribute('hidden', '');
+      document.querySelectorAll('[data-preview-size]').forEach(node => delete node.dataset.previewSize);
+    }
+
+    function render({ audible = false, added = null } = {}) {
+      hideTooltip();
+      clearPreview();
+      if (audible) stopVoices();
+      const result = analyzeCombination();
+      const count = slots.filter(Boolean).length;
+      const n = totalThirds();
+      const state = !count ? 'empty' : result.valid ? 'balanced' : 'seeking';
+      $('chamber').dataset.state = state;
+      const artifact = document.documentElement.dataset.theme === 'artifact';
+      $('resultTitle').textContent = !count ? 'Всё начинается с касания' : result.valid ? (artifact ? abilityInfo(slots.filter(Boolean)).label : 'Связь замкнулась') : count === 1 ? 'Первый отклик' : 'В поиске равновесия';
+      $('resultDetail').textContent = !count ? 'Выбери любое начертание' : result.valid ? (artifact ? `${count === 2 ? 'Малая' : 'Большая'} печать завершена` : `${count === 2 ? 'Два' : 'Три'} знака · общий центр · заряд ${fractionText(n)}`) : count === 1 ? 'Каждый знак меняет целое' : count === 2 ? 'Продолжи сочетание или замени знак' : 'Убери один знак, чтобы попробовать другой';
+      if (!artifact) {
+        $('resultTitle').textContent = !count ? 'Состав не выбран' : result.valid ? kindNames[result.kind] : 'Цвет не скомпенсирован';
+        $('resultDetail').textContent = !count ? 'Выбери кварк или антикварк' : `Компонентов: ${count} · электрический заряд ${fractionText(n)} e`;
+      }
+      $('physicalResult').textContent = result.valid ? `${kindNames[result.kind]}. Аналог по кварковому составу: ${result.analog}. Электрический заряд: ${fractionText(n)} e. Масса и спин здесь не определяются.` : !count ? 'За начертаниями скрываются кварки и антикварки.' : 'Цветовые заряды ещё не скомпенсированы. Замкнутая пара соответствует мезону, тройка — бариону или антибариону.';
+      $('fieldDescription').textContent = `${artifact ? 'Рун' : 'Кварков и антикварков'}: ${count}. ${!count ? 'Круг пуст.' : result.valid ? 'Центр достигнут.' : 'Фокус смещён от центра.'} ${artifact ? (result.valid ? abilityInfo(slots.filter(Boolean)).full : 'Печать не собрана.') : `Электрический заряд ${fractionText(n)} e.`}`;
+      renderSlots();
+      renderReadout(result);
+      renderField(result);
+      renderAbilities();
+      const key = slots.filter(Boolean).slice().sort().join('|');
+      clearTimeout(arrivalTimer);
+      $('chamber').classList.remove('arrived');
+      if (result.valid && key !== previousKey) {
+        void $('chamber').offsetWidth;
+        $('chamber').classList.add('arrived');
+        arrivalTimer = setTimeout(() => $('chamber').classList.remove('arrived'), 1000);
+        if (audible) playSound(result);
+      } else if (audible && added) playSound(null, added);
+      previousKey = key;
+    }
+
+    function addPiece(id) {
+      if (!byId[id] || slots.includes(id) || reservedIds().includes(id)) return;
+      const index = slots.indexOf(null);
+      if (index < 0) {
+        $('announcement').textContent = document.documentElement.dataset.theme === 'artifact' ? 'В круге уже три камня. Убери один, чтобы добавить другой.' : 'В составе уже три компонента. Убери один, чтобы добавить другой.';
+        return;
+      }
+      const source = document.querySelector(`.piece[data-id="${id}"]`);
+      const from = source.querySelector('.rune').getBoundingClientRect();
+      const moveFocus = document.activeElement === source || document.activeElement?.getAttribute('data-insert') === id;
+      slots[index] = id;
+      $('cycleNote').textContent = '';
+      $('announcement').textContent = '';
+      render({ audible: true, added: byId[id] });
+      const socket = $('slots').querySelector(`[data-slot="${index}"]`);
+      animateTransfer(byId[id], from, socket.querySelector('.rune').getBoundingClientRect());
+      if (moveFocus) socket.focus({ preventScroll: true });
+    }
+
+    function removePiece(index) {
+      const removed = slots[index];
+      const from = $('slots').querySelector(`[data-slot="${index}"] .rune`).getBoundingClientRect();
+      slots[index] = null;
+      $('cycleNote').textContent = '';
+      render({ audible: true });
+      const returned = document.querySelector(`.piece[data-id="${removed}"]`);
+      returned.focus({ preventScroll: true });
+      animateTransfer(byId[removed], from, returned.querySelector('.rune').getBoundingClientRect());
+      clearPreview();
+    }
+
+    function animateTransfer(piece, from, to) {
+      if (motionPreference.matches) return;
+      const flight = document.createElement('span');
+      flight.className = `stone-flight ${piece.color}`;
+      flight.setAttribute('aria-hidden', 'true');
+      flight.innerHTML = runeHTML(piece);
+      Object.assign(flight.style, { left: `${from.x}px`, top: `${from.y}px`, width: `${from.width}px`, height: `${from.height}px` });
+      document.body.append(flight);
+      const animation = flight.animate([
+        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+        { transform: `translate(${to.x - from.x}px, ${to.y - from.y}px) scale(${to.width / from.width}, ${to.height / from.height})`, opacity: 0 }
+      ], { duration: 420, easing: 'cubic-bezier(.2,.75,.2,1)' });
+      animation.finished.then(() => flight.remove(), () => flight.remove());
+    }
+
+    function availableRecipes(count) {
+      const reserved = reservedIds();
+      return (count === 2 ? recipes2 : recipes3).filter(ids => ids.every(id => !reserved.includes(id)));
+    }
+
+    function randomRecipe(count) {
+      const current = slots.filter(Boolean).slice().sort().join('|');
+      const available = availableRecipes(count);
+      const alternatives = available.filter(ids => ids.slice().sort().join('|') !== current);
+      const candidates = alternatives.length ? alternatives : available;
+      if (!candidates.length) return;
+      setRecipe(candidates[Math.floor(Math.random() * candidates.length)]);
+    }
+
+    function setRecipe(ids) {
+      if (!Array.isArray(ids) || ids.length < 2 || ids.length > 3 || new Set(ids).size !== ids.length || ids.some(id => !byId[id] || reservedIds().includes(id))) return;
+      slots = [...ids];
+      while (slots.length < 3) slots.push(null);
+      $('cycleNote').textContent = document.documentElement.dataset.theme === 'artifact' ? (ids.length === 2 ? 'Случайная пара' : 'Случайная тройка') : `Случайный состав: ${ids.length} компонента`;
+      $('announcement').textContent = '';
+      render({ audible: true });
+    }
+
+    function ensureAudio() {
+      if (!soundEnabled) return null;
+      if (!audio) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        try {
+          const context = new AudioContextClass();
+          const master = context.createGain();
+          master.gain.value = .23;
+          master.connect(context.destination);
+          audio = { context, master, voices: new Set() };
+        } catch { return null; }
+      }
+      if (audio.context.state === 'suspended') audio.context.resume().catch(() => {});
+      return audio;
+    }
+
+    function stopVoices() {
+      if (!audio) return;
+      const now = audio.context.currentTime;
+      audio.voices.forEach(({ oscillator, gain }) => {
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setTargetAtTime(0, now, .008);
+        oscillator.stop(now + .035);
+      });
+      audio.voices.clear();
+    }
+
+    function playSound(result, piece) {
+      const engine = ensureAudio();
+      if (!engine) return;
+      const { context, master } = engine;
+      const artifact = document.documentElement.dataset.theme === 'artifact';
+      const base = result ? 174.61 * Math.pow(2, totalThirds() / 18) * (result.kind === 'antibaryon' ? .75 : 1) : [220, 261.63, 329.63][colors.indexOf(piece.color)] * (piece.anti ? .75 : 1);
+      const notes = result ? (result.kind === 'meson' ? [1, 1.5, 2] : [1, 1.2, 1.5, 2]) : [1];
+      notes.forEach((ratio, index) => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        const start = context.currentTime + .01 + index * (artifact ? .055 : .035);
+        const duration = result ? (artifact ? 1.6 : .9) : .35;
+        oscillator.type = artifact && index === 0 ? 'triangle' : 'sine';
+        oscillator.frequency.setValueAtTime(base * ratio, start);
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(result ? .12 : .09, start + .025);
+        gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
+        oscillator.connect(gain);
+        gain.connect(master);
+        const voice = { oscillator, gain };
+        audio.voices.add(voice);
+        oscillator.start(start);
+        oscillator.stop(start + duration + .05);
+        oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); audio.voices.delete(voice); };
+      });
+    }
+
+    function setTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      const title = theme === 'artifact' ? 'Равновесие' : 'Цветовой баланс';
+      document.querySelector('h1').textContent = title;
+      document.title = `${title} · QCD`;
+      document.querySelectorAll('[data-theme-choice]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.themeChoice === theme)));
+      $('fieldLabel').textContent = theme === 'artifact' ? 'Алхимический круг' : 'Цветовая диаграмма';
+      $('chamber').setAttribute('aria-label', $('fieldLabel').textContent);
+      $('fieldTitle').textContent = theme === 'artifact' ? 'Баланс трёх символов и их противоположностей' : 'Диаграмма цветовых зарядов';
+      $('slots').setAttribute('aria-label', theme === 'artifact' ? 'Камни на круге, не больше трёх одновременно' : 'Текущий состав: до трёх кварков или антикварков');
+      $('libraryTitle').textContent = theme === 'artifact' ? 'Инвентарь' : 'Кварки и антикварки';
+      $('forwardLabel').textContent = theme === 'artifact' ? 'Прямые' : 'Кварки';
+      $('reverseLabel').textContent = theme === 'artifact' ? 'Обратные' : 'Антикварки';
+      $('libraryNote').textContent = theme === 'artifact' ? 'Коснись камня, чтобы поместить в слот.' : 'Выбери компонент для текущего состава.';
+      $('scienceSummary').textContent = theme === 'artifact' ? 'Что скрыто внутри' : 'О кварковой модели';
+      document.querySelectorAll('.family-head > span:first-child').forEach((label, index) => {
+        label.textContent = theme === 'artifact' ? families[colors[index]].roman : colors[index][0];
+      });
+      $('cycleNote').textContent = '';
+      $('editionLabel').textContent = theme === 'artifact' ? '01 · АЛХИМИЯ' : '02 · КВАРКОВАЯ МОДЕЛЬ';
+      render();
+      try { localStorage.setItem('qcd-theme', theme); } catch { /* File URLs may disallow storage. */ }
+    }
+
+    function fitWorkspace() {
+      // Enlarge the whole instrument together, bounded by both viewport dimensions.
+      const scale = Math.max(1, Math.min(innerWidth / 1440, innerHeight / 1024, 2.4));
+      document.documentElement.style.setProperty('--workspace-scale', String(scale));
+      if (strandElements.length) renderField(analyzeCombination());
+    }
+
+    document.querySelectorAll('[data-theme-choice]').forEach(button => button.addEventListener('click', () => setTheme(button.dataset.themeChoice)));
+    document.addEventListener('pointerover', event => {
+      if (event.pointerType !== 'mouse') return;
+      if ($('runeTooltip').contains(event.target)) { clearTimeout(tooltipHideTimer); return; }
+      const target = event.target.closest(inspectSelector);
+      if (target) clearTimeout(tooltipHideTimer);
+      if (target && target !== tooltipTarget) showTooltip(target);
+    });
+    document.addEventListener('pointerout', event => {
+      if (event.pointerType === 'mouse' && tooltipTarget && !tooltipTarget.contains(event.relatedTarget) && !$('runeTooltip').contains(event.relatedTarget)) {
+        clearTimeout(tooltipHideTimer);
+        tooltipHideTimer = setTimeout(hideTooltip, 250);
+      }
+    });
+    document.addEventListener('focusin', event => {
+      const target = event.target.closest(inspectSelector);
+      if (target && !pointerFocus) showTooltip(target);
+    });
+    document.addEventListener('focusout', hideTooltip);
+    document.addEventListener('pointerdown', event => {
+      pointerFocus = true;
+      suppressedTarget = null;
+      cancelPress();
+      if ($('runeTooltip').contains(event.target)) return;
+      hideTooltip();
+      const target = event.target.closest(inspectSelector);
+      if (!target || event.pointerType === 'mouse' || !event.isPrimary) return;
+      press = { target, x: event.clientX, y: event.clientY, pointerId: event.pointerId };
+      pressTimer = setTimeout(() => {
+        if (!press || !press.target.isConnected) return;
+        suppressedTarget = press.target;
+        clearPreview();
+        showTooltip(press.target);
+      }, 500);
+    }, true);
+    document.addEventListener('pointermove', event => {
+      if (press && event.pointerId === press.pointerId && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 10) {
+        cancelPress();
+        hideTooltip();
+      }
+    });
+    document.addEventListener('pointerup', cancelPress);
+    document.addEventListener('pointercancel', () => { cancelPress(); hideTooltip(); });
+    // Suppress the synthetic click following a touch inspection, not the next gesture.
+    document.addEventListener('click', event => {
+      if (suppressedTarget?.contains(event.target)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        suppressedTarget = null;
+      }
+    }, true);
+    document.addEventListener('contextmenu', event => {
+      if (event.target.closest(inspectSelector)) event.preventDefault();
+    });
+    window.addEventListener('scroll', event => {
+      if (event.target === $('runeTooltip')) return;
+      cancelPress();
+      // Scrolling a focused card into view must not dismiss its freshly opened composition.
+      if (tooltipTarget?.matches('.ability-card') && document.activeElement === tooltipTarget) showTooltip(tooltipTarget);
+      else hideTooltip();
+    }, true);
+    window.addEventListener('resize', hideTooltip);
+    window.addEventListener('blur', () => { cancelPress(); hideTooltip(); });
+    $('slots').addEventListener('click', event => {
+      const insert = event.target.closest('[data-insert]');
+      if (insert) {
+        if (!insert.disabled) addPiece(insert.dataset.insert);
+        return;
+      }
+      const button = event.target.closest('[data-slot]');
+      if (button && slots[Number(button.dataset.slot)]) removePiece(Number(button.dataset.slot));
+    });
+    $('slots').addEventListener('pointerover', event => {
+      if (event.pointerType === 'touch') return;
+      const button = event.target.closest('[data-insert]');
+      if (button && !button.disabled) showPreview(button.dataset.insert);
+      else clearPreview();
+    });
+    $('slots').addEventListener('pointerleave', clearPreview);
+    $('slots').addEventListener('focusin', event => {
+      const button = event.target.closest('[data-insert]');
+      if (button && !button.disabled) showPreview(button.dataset.insert);
+      else clearPreview();
+    });
+    $('slots').addEventListener('focusout', clearPreview);
+    $('next2').addEventListener('click', () => randomRecipe(2));
+    $('next3').addEventListener('click', () => randomRecipe(3));
+    $('bindSeal').addEventListener('click', bindSeal);
+    $('abilityBar').addEventListener('click', event => {
+      const button = event.target.closest('[data-release]');
+      if (button) releaseAbility(Number(button.dataset.release));
+      else {
+        const card = event.target.closest('[data-ability]');
+        if (card) showTooltip(card);
+      }
+    });
+    $('reset').addEventListener('click', () => {
+      slots = [null, null, null];
+      document.querySelectorAll('.stone-flight').forEach(node => node.remove());
+      $('cycleNote').textContent = '';
+      $('announcement').textContent = '';
+      stopVoices();
+      render();
+    });
+    $('toggleSound').addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      $('toggleSound').setAttribute('aria-pressed', String(soundEnabled));
+      $('toggleSound').setAttribute('aria-label', soundEnabled ? 'Звук включён. Выключить звук' : 'Звук выключен. Включить звук');
+      $('soundLabel').textContent = soundEnabled ? 'Звук вкл' : 'Звук выкл';
+      if (audio) {
+        const now = audio.context.currentTime;
+        audio.master.gain.cancelScheduledValues(now);
+        audio.master.gain.setTargetAtTime(soundEnabled ? .23 : 0, now, .015);
+      }
+    });
+    document.addEventListener('keydown', event => {
+      pointerFocus = false;
+      if (event.key === 'Escape') { cancelPress(); hideTooltip(); clearPreview(); }
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (frame) cancelAnimationFrame(frame);
+        frame = 0;
+        stopVoices();
+        if (audio) audio.context.suspend().catch(() => {});
+      } else if (!frame) animateField(performance.now());
+    });
+    motionPreference.addEventListener('change', () => {
+      if (frame) cancelAnimationFrame(frame);
+      animateField(performance.now());
+    });
+
+    window.addEventListener('resize', fitWorkspace);
+    fitWorkspace();
+    renderPalette();
+    renderDial();
+    render();
+    try {
+      const saved = localStorage.getItem('qcd-theme');
+      if (saved === 'artifact' || saved === 'instrument') setTheme(saved);
+    } catch { /* The instrument also works without persistent storage. */ }
+  </script>
+</body>
+</html>
