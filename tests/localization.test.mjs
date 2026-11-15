@@ -117,6 +117,51 @@ describe('Localization', () => {
     }), dictionaries.en['app.artifact'], 'Missing translated entries fall back to English');
   });
 
+  it('names the red Mars, green Venus, and blue Moon families in every language and inspection surface', async () => {
+    const names = {
+      ru: ['Марс', 'Венера', 'Луна'], en: ['Mars', 'Venus', 'Moon'],
+      es: ['Marte', 'Venus', 'Luna'], pt: ['Marte', 'Vênus', 'Lua'], zh: ['火星', '金星', '月亮']
+    };
+    const colors = ['red', 'green', 'blue'];
+    const symbols = ['♂', '♀', '☾'];
+    for (const locale of languages) {
+      await page.keyboard.press('Escape');
+      await page.locator('#languageSelect').focus();
+      await choose(locale);
+      const inflected = locale === 'ru' ? ['Марса', 'Венеры', 'Луны'] : names[locale];
+      assert.deepEqual(await page.evaluate(() => Object.values(families).map(family => family.name)), names[locale]);
+      for (const [index, color] of colors.entries()) {
+        for (const prefix of ['u', 'au']) {
+          const stone = page.locator(`.piece[data-id="${prefix}-${color[0]}"]`);
+          assert.ok((await stone.getAttribute('aria-label')).includes(inflected[index]), `${locale}/${color}: accessible name`);
+          await stone.focus();
+          const text = await page.locator('#runeTooltip').textContent();
+          assert.ok(text.includes(inflected[index]) && text.includes(symbols[index]), `${locale}/${color}: tooltip name and symbol: ${text}`);
+          assert.doesNotMatch(text, /пси|молни|эфир|\bpsi\b|lightning|aether|rayo|raio|éter|灵能|雷电|以太/i);
+        }
+      }
+      await page.evaluate(() => { setRecipe(['u-r', 'u-g', 'u-b']); bindSeal(); });
+      await page.locator('[data-ability="0"]').click();
+      const saved = await page.locator('#runeTooltip').textContent();
+      assert.ok(inflected.every(name => saved.includes(name)), `${locale}: saved ingredients use the new names`);
+      await page.evaluate(() => releaseAbility());
+    }
+  });
+
+  it('keeps scientific explanations concise and describes balance at the diagram center in every language', async () => {
+    const dictionaries = await page.evaluate(() => translations);
+    for (const locale of languages) {
+      const dictionary = dictionaries[locale];
+      const copy = ['science.symbols', 'science.model', 'science.result', 'rune.u', 'rune.d'].map(key => dictionary[key]).join('\n');
+      assert.doesNotMatch(copy, /масс|симуля|не модел|не определ|замкнут|\bmass\b|physical size|simulat|not modeled|not determined|closed bond|masa|tamaño físico|no se model|no se determin|unión cerrada|massa|tamanho físico|simula|não são|ligação fechada|质量|实际大小|模拟|自旋|闭合/i, locale);
+      assert.match(dictionary['science.model'], /центр|center|centro|中心/i, `${locale}: balance is explained at the center`);
+      assert.match(dictionary['science.model'], /квантовой хромодинамикой|quantum chromodynamics|cromodinámica cuántica|cromodinâmica quântica|量子色动力学/i, `${locale}: QCD inspiration is retained`);
+      for (const key of ['science.symbols', 'rune.u', 'rune.d']) {
+        assert.match(dictionary[key], /электрического заряда|electric charge|carga eléctrica|carga elétrica|电荷/, `${locale}/${key}: size means electric charge magnitude`);
+      }
+    }
+  });
+
   it('resolves the primary browser language and its regions with an English fallback', async () => {
     assert.equal(await page.locator('#languageSelect').inputValue(), 'auto');
     assert.equal(await page.evaluate(() => language), 'en');
@@ -231,6 +276,47 @@ describe('Localization', () => {
       assert.equal(await page.locator('#announcement').textContent(), await translated('ability.returned.artifact', { count: 2 }));
       assert.equal(await page.locator('.piece[data-id="u-r"]').getAttribute('aria-label'), await translated('piece.add', { name: await page.evaluate(() => pieceName(byId['u-r'])) }));
     }
+  });
+
+  it('keeps six localized manuscript inscriptions on their socket axes and outside the working circle', async () => {
+    await page.evaluate(() => setRecipe(['u-r', 'ad-r']));
+    for (const locale of languages) {
+      await choose(locale);
+      const inscriptions = await page.evaluate(() => [...document.querySelectorAll('.manuscript-inscription')].map(text => {
+        const label = text.querySelector('textPath');
+        const arc = document.querySelector(label.getAttribute('href'));
+        const midpoint = arc.getPointAtLength(arc.getTotalLength() / 2);
+        const [, color, direction] = label.dataset.i18n.split('.');
+        const sign = direction === 'reverse' ? -1 : 1;
+        const radius = Math.hypot(midpoint.x - center.x, midpoint.y - center.y);
+        const box = text.getBBox();
+        return { actual: label.textContent, expected: t(label.dataset.i18n), length: text.getComputedTextLength(), available: arc.getTotalLength(),
+          axisError: Math.hypot((midpoint.x - center.x) / radius - vectors[color].x * sign, (midpoint.y - center.y) / radius - vectors[color].y * sign),
+          centeringError: Math.max(...Array.from({ length: text.getNumberOfChars() }, (_, index) => {
+            const glyph = text.getExtentOfChar(index);
+            return Math.abs(Math.hypot(glyph.x + glyph.width / 2 - center.x, glyph.y + glyph.height / 2 - center.y) - 268);
+          })),
+          insideField: box.x >= 0 && box.y >= 0 && box.x + box.width <= 640 && box.y + box.height <= 600,
+          outsideWork: Array.from({ length: text.getNumberOfChars() }, (_, index) => {
+            const point = text.getStartPositionOfChar(index);
+            return Math.hypot(point.x - center.x, point.y - center.y) > 250;
+          }).every(Boolean) };
+      }));
+      assert.equal(inscriptions.length, 6);
+      for (const inscription of inscriptions) {
+        assert.equal(inscription.actual, inscription.expected, locale);
+        assert.ok(inscription.length <= inscription.available, `${locale}: inscription fits its sector`);
+        assert.ok(inscription.axisError < .001, `${locale}: inscription names the correct socket axis`);
+        assert.ok(inscription.centeringError < 1.5, `${locale}: glyphs are radially centered in the band (${inscription.centeringError})`);
+        assert.ok(inscription.insideField && inscription.outsideWork, `${locale}: inscription stays in the outer band`);
+      }
+    }
+    await page.locator('[data-theme-choice="instrument"]').click();
+    assert.equal(await page.locator('#manuscriptLegend').isVisible(), false);
+    assert.equal(await page.locator('.celestial-orbit').isVisible(), false);
+    await page.locator('[data-theme-choice="artifact"]').click();
+    assert.equal(await page.locator('#manuscriptLegend').isVisible(), true);
+    assert.deepEqual(await page.evaluate(() => [...slots]), ['u-r', 'ad-r', null]);
   });
 
   it('fits translated controls, cards, tooltips, and readouts on mobile and desktop', async () => {

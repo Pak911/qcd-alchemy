@@ -122,8 +122,7 @@
     .magnitude-1 .rune-frame { stroke-opacity: .55; }
     .rune-glyph { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
     .quark-glyph { fill: currentColor; stroke: none; font: italic 26px Georgia, serif; text-anchor: middle; }
-    .rune-reverse .rune-glyph { stroke-dasharray: 3 3; }
-    .rune-forward .rune-glyph { filter: drop-shadow(0 0 3px currentColor); }
+    .rune .rune-glyph { filter: drop-shadow(0 0 3px currentColor); }
     .stone-flight { position: fixed; pointer-events: none; z-index: 20; transform-origin: top left; }
     .stone-flight .rune { width: 100%; height: 100%; }
     .red { --piece-color: var(--red); }
@@ -164,6 +163,8 @@
     .target-light { fill: url(#focusLight); opacity: .8; }
     .center-target { fill: rgba(var(--accent-rgb), .035); stroke: var(--accent); stroke-width: 1.7; opacity: .9; }
     .focus-halo { fill: url(#focusLight); opacity: .6; }
+    .focus-appearing { animation: focus-appear .3s ease-out both; }
+    @keyframes focus-appear { from { opacity: 0; } to { opacity: 1; } }
     .focus-ring { fill: none; stroke: var(--ink); stroke-width: 1; opacity: .3; }
     .focus-dot { fill: var(--ink); filter: url(#pointGlow); }
     .focus-seed { fill: var(--ink); }
@@ -180,11 +181,13 @@
     .chamber[data-state="balanced"] .result-seal { opacity: .35; }
     .chamber[data-state="balanced"] .center-target { stroke: var(--ink); opacity: 1; }
     .chamber[data-state="balanced"] .focus-halo { opacity: 1; }
-    .chamber[data-state="balanced"] .orbit { animation: orbit-turn 100s linear infinite; }
+    [data-theme="artifact"] .orbit { animation: orbit-turn 100s linear infinite; }
     .chamber[data-state="empty"] #focus, .chamber[data-state="empty"] .target-light { opacity: 0; }
     .release-ring { fill: none; stroke: var(--accent); stroke-width: 1.3; opacity: 0; transform-origin: 320px 294px; }
     .chamber.arrived .release-ring { animation: release .95s ease-out; }
     .alchemy-seal { opacity: .15; transition: opacity .5s; pointer-events: none; }
+    .seal-backplate { fill: var(--bg); visibility: hidden; pointer-events: none; }
+    [data-theme="artifact"] .chamber[data-state="balanced"] .seal-backplate { visibility: visible; }
     .alchemy-seal .seal-icon { width: 100px; height: 100px; }
     [data-theme="artifact"] .chamber[data-state="balanced"] .alchemy-seal { opacity: 1; }
     [data-theme="artifact"] .chamber[data-state="balanced"] #focus,
@@ -213,7 +216,7 @@
     .socket .rune { position: relative; width: 100%; height: 100%; }
     .socket-ghost { position: relative; width: 65%; height: 65%; opacity: .45; }
     .socket-ghost .rune-frame { display: none; }
-    .socket-ghost .rune-forward .rune-glyph { filter: none; }
+    .socket-ghost .rune .rune-glyph { filter: none; }
     .socket .piece-charge { position: absolute; left: 0; right: 0; top: calc(100% + 3px); font-size: 10px; }
     .socket.filled .socket-outlines { stroke: color-mix(in srgb, var(--piece-color) 35%, var(--line)); }
     .socket-remove { position: absolute; right: -3px; top: -3px; border: 1px solid var(--line); background: var(--bg); width: 21px; height: 21px; border-radius: 50%; font-size: 15px; line-height: 17px; color: var(--muted); opacity: 0; transition: opacity .15s; }
@@ -304,7 +307,7 @@
     [data-theme="instrument"] .result-title { font-size: 22px; font-weight: 300; letter-spacing: -.025em; }
     [data-theme="instrument"] .palette { background: #07121c80; }
     [data-theme="instrument"] .piece { border-radius: 6px; }
-    [data-theme="instrument"] .rune-forward .rune-glyph { filter: none; }
+    [data-theme="instrument"] .rune .rune-glyph { filter: none; }
     [data-theme="instrument"] .charge-value { font-family: var(--mono); font-size: 47px; font-weight: 300; }
     [data-theme="instrument"] .strand { stroke-width: 2; }
     [data-theme="instrument"] .strand-glow { stroke-width: 8; opacity: .15; }
@@ -312,6 +315,32 @@
     [data-theme="artifact"] .balance-tracks, [data-theme="artifact"] .balance-extents { display: none; }
     [data-theme="artifact"] .palette-labels { display: none; }
     [data-theme="artifact"] .palette { margin-top: 21px; }
+    [data-theme="artifact"] body { font-family: Georgia, "Times New Roman", serif; }
+    [data-theme="artifact"] :is(h1, .result-title, .ability-name) { font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif; font-style: italic; }
+    [data-theme="artifact"] .eyebrow { font-family: var(--heading); font-size: 12px; font-variant: small-caps; text-transform: none; letter-spacing: .04em; }
+    [data-theme="artifact"] :is(.inventory-count, .cycle-note, .assembly-controls, .action-direction, .action-value, .colophon) { font-family: var(--heading); }
+    [data-theme="artifact"] :is(.library-note, .result-detail, .ability-detail) { font-size: 12px; }
+    [data-theme="artifact"] :is(.library-note, .result-detail, .action-direction) { font-style: italic; }
+    [data-theme="artifact"] .ability-slot { background: transparent; border-color: transparent; }
+    [data-theme="artifact"] .ability-slot.empty { position: relative; font-family: var(--heading); color: var(--faint); }
+    [data-theme="artifact"] .ability-slot.empty::before { content: ""; position: absolute; width: 64px; height: 64px; border: 1px solid rgba(var(--accent-rgb), .28); border-radius: 50%; box-shadow: 0 0 0 3px var(--bg), 0 0 0 4px rgba(var(--accent-rgb), .12); }
+    [data-theme="artifact"] .manuscript-ornament { fill: none; stroke: rgba(var(--accent-rgb), .35); stroke-width: .7; pointer-events: none; }
+    /* Keep circular hairlines from shrinking below a CSS pixel with the SVG viewBox. */
+    [data-theme="artifact"] :is(.engraving, .manuscript-ornament) circle { vector-effect: non-scaling-stroke; stroke-width: 1px; shape-rendering: geometricPrecision; }
+    [data-theme="artifact"] .manuscript-inscription { fill: var(--accent); fill-opacity: .85; stroke: none; font: italic 600 19px "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif; letter-spacing: .3px; dominant-baseline: central; }
+    [data-theme="artifact"] .socket .piece-charge { width: max-content; margin-inline: auto; padding-inline: 3px; background: var(--bg); }
+    [data-theme="artifact"] .lower-axis .socket .piece-charge { top: auto; bottom: calc(100% + 3px); }
+    [data-theme="artifact"] .field { overflow: visible; }
+    [data-theme="artifact"] .field-wrap { margin-top: 30px; }
+    [data-theme="artifact"] .field-status { margin-top: 24px; }
+    [data-theme="artifact"] .celestial-orbit {
+      fill: none; stroke: var(--accent); stroke-width: 1; pointer-events: none;
+      transform-origin: 320px 294px; opacity: 0; visibility: hidden;
+      animation: orbit-turn 140s linear infinite reverse; animation-play-state: paused;
+      transition: opacity .6s, visibility .6s;
+    }
+    [data-theme="artifact"] .chamber[data-state="balanced"] .celestial-orbit { opacity: .85; visibility: visible; animation-play-state: running; }
+    .celestial-orbit .star { fill: rgba(var(--accent-rgb), .25); }
     @keyframes orbit-turn { to { transform: rotate(360deg); } }
     @keyframes release { 0% { opacity: .7; transform: scale(.35); } 100% { opacity: 0; transform: scale(1.5); } }
     @media (max-width: 1180px) {
@@ -400,9 +429,16 @@
     <header class="masthead">
       <div class="brand">
         <svg class="brand-mark" viewBox="0 0 40 46" aria-hidden="true">
-          <path d="M20 3 37 33H3ZM20 43 3 13H37Z" fill="none" stroke="currentColor" stroke-width=".8"/>
-          <circle cx="20" cy="23" r="5" fill="none" stroke="currentColor"/>
-          <circle cx="20" cy="23" r="1.5" fill="currentColor"/>
+          <g class="brand-artifact artifact-only">
+            <path d="M20 3 37 33H3ZM20 43 3 13H37Z" fill="none" stroke="currentColor" stroke-width=".8"/>
+            <circle cx="20" cy="23" r="5" fill="none" stroke="currentColor"/>
+            <circle cx="20" cy="23" r="1.5" fill="currentColor"/>
+          </g>
+          <g class="brand-instrument instrument-only">
+            <circle class="quark" cx="20" cy="16" r="6.5" fill="var(--red)"/>
+            <circle class="quark" cx="12.5" cy="29" r="6.5" fill="var(--green)"/>
+            <circle class="quark" cx="27.5" cy="29" r="6.5" fill="var(--blue)"/>
+          </g>
         </svg>
         <div><h1></h1></div>
       </div>
@@ -465,15 +501,32 @@
             <g aria-hidden="true">
               <rect class="instrument-only" x="70" y="44" width="500" height="500" fill="url(#fieldGrid)" clip-path="url(#discClip)"/>
               <g class="engraving artifact-only"><circle cx="320" cy="294" r="251"/><circle cx="320" cy="294" r="239"/><circle cx="320" cy="294" r="190" opacity=".4"/></g>
+              <g class="manuscript-ornament artifact-only">
+                <circle cx="320" cy="294" r="285"/>
+                <circle cx="320" cy="294" r="281" stroke-opacity=".4"/>
+                <g class="celestial-track"><circle cx="320" cy="294" r="319" stroke-opacity=".4"/><circle cx="320" cy="294" r="322"/></g>
+                <g id="manuscriptLegend"></g>
+              </g>
+              <g class="celestial-orbit artifact-only">
+                <path class="star" transform="translate(320 -10)" d="M0-9 2.7-2.7 9 0 2.7 2.7 0 9-2.7 2.7-9 0-2.7-2.7Z"/>
+                <g class="sun" transform="translate(624 294)"><circle r="5.5"/><circle r="1.2" fill="var(--accent)" stroke="none"/><path d="M0-8V-11M0 8V11M-8 0H-11M8 0H11M-5.7-5.7-7.8-7.8M5.7 5.7 7.8 7.8M-5.7 5.7-7.8 7.8M5.7-5.7 7.8-7.8"/></g>
+                <path class="star" transform="translate(320 598)" d="M0-9 2.7-2.7 9 0 2.7 2.7 0 9-2.7 2.7-9 0-2.7-2.7Z"/>
+                <g class="comet" transform="translate(320 294) rotate(270) translate(0 -304)"><circle cy="4" r="3"/><path d="M-2 1Q-5-3-6-9M0 0V-11M2 1Q5-3 6-9"/></g>
+                <path data-alchemical="fire" transform="translate(320 294) rotate(45) translate(0 -304)" d="M0-8 8 7H-8Z"/>
+                <path data-alchemical="air" transform="translate(320 294) rotate(135) translate(0 -304)" d="M0-8 8 7H-8ZM-6 2H6"/>
+                <g data-alchemical="salt" transform="translate(320 294) rotate(225) translate(0 -304)"><circle r="7"/><path d="M-7 0H7"/></g>
+                <path data-alchemical="saturn" transform="translate(320 294) rotate(315) translate(0 -304)" d="M-3-10V10M-7-6H2M-3 0C7-7 8 3 3 7Q1 10 5 10"/>
+              </g>
               <g id="dialTicks" class="outer-ticks"></g>
               <g class="orbit artifact-only engraving"><circle class="orbit-detail" cx="320" cy="294" r="231"/><path d="M320 38 326 44 320 50 314 44ZM320 538 326 544 320 550 314 544ZM64 294 70 288 76 294 70 300ZM564 294 570 288 576 294 570 300"/></g>
               <circle class="engraving instrument-only" cx="320" cy="294" r="245"/>
               <path class="guide" d="M320 90V498M143.33 192 496.67 396M143.33 396 496.67 192"/>
-              <path class="triangle" d="M320 136 183.17 373 456.83 373Z"/>
-              <path class="triangle triangle-inverse" d="M320 452 183.17 215 456.83 215Z"/>
+              <path class="triangle artifact-only" d="M320 136 183.17 373 456.83 373Z"/>
+              <path class="triangle triangle-inverse artifact-only" d="M320 452 183.17 215 456.83 215Z"/>
               <g class="instrument-only"><text class="instrument-label" x="77" y="565" data-i18n="field.colorSpace"></text><text class="instrument-label" x="492" y="565">Σ → 0</text></g>
               <g id="strands"></g>
               <g id="resultSeal" class="result-seal instrument-only"></g>
+              <circle id="sealBackplate" class="seal-backplate artifact-only" cx="320" cy="294" r="40"/>
               <circle class="target-light" cx="320" cy="294" r="50"/>
               <circle id="centerTarget" class="center-target" cx="320" cy="294" r="24"/>
               <circle class="release-ring" cx="320" cy="294" r="100"/>
@@ -611,9 +664,9 @@
       "scienceSummary.artifact": "Что скрыто внутри",
       "scienceSummary.instrument": "О кварковой модели",
       "science.intro": "За начертаниями скрываются кварки и антикварки.",
-      "science.symbols": "Три семейства обозначают цветовые заряды, противоположные направления соответствуют цвету и антицвету. В кварковой модели используются обозначения u, d и антикварков с чертой сверху. Размер значка показывает модуль электрического заряда, не массу и не физический размер кварка.",
-      "science.model": "Пара «цвет + соответствующий антицвет» или тройка разных цветов либо разных антицветов дают здесь замкнутую связь. Это наглядная модель правил сочетания, вдохновлённая квантовой хромодинамикой, а не её симуляция. Центр диаграммы иллюстрирует компенсацию; квантовые состояния, спин и динамика сильного взаимодействия не моделируются.",
-      "science.result": "{kind}. Аналог по кварковому составу: {analog}. Электрический заряд: {charge} e. Масса и спин здесь не определяются.",
+      "science.symbols": "Три семейства обозначают цветовые заряды, противоположные направления соответствуют цвету и антицвету. В кварковой модели используются обозначения u, d и антикварков с чертой сверху. Размер значка показывает модуль электрического заряда.",
+      "science.model": "В центре диаграммы уравновешиваются пары «цвет + соответствующий антицвет», а также тройки разных цветов или разных антицветов. Это наглядная модель правил сочетания, вдохновлённая квантовой хромодинамикой.",
+      "science.result": "{kind}. Аналог по кварковому составу: {analog}. Электрический заряд: {charge} e.",
       "science.seeking": "Цветовые заряды ещё не скомпенсированы. Замкнутая пара соответствует мезону, тройка — бариону или антибариону.",
       "edition.artifact": "01 · АЛХИМИЯ",
       "edition.instrument": "02 · КВАРКОВАЯ МОДЕЛЬ",
@@ -670,15 +723,15 @@
       "color.red": "красный",
       "color.green": "зелёный",
       "color.blue": "синий",
-      "family.red": "пси",
-      "family.green": "молния",
-      "family.blue": "эфира",
-      "sign.red.forward": "Прямой знак пси",
-      "sign.red.reverse": "Обратный знак пси",
-      "sign.green.forward": "Прямой знак молнии",
-      "sign.green.reverse": "Обратный знак молнии",
-      "sign.blue.forward": "Прямой знак эфира",
-      "sign.blue.reverse": "Обратный знак эфира",
+      "family.red": "Марс",
+      "family.green": "Венера",
+      "family.blue": "Луна",
+      "sign.red.forward": "Прямой знак Марса",
+      "sign.red.reverse": "Обратный знак Марса",
+      "sign.green.forward": "Прямой знак Венеры",
+      "sign.green.reverse": "Обратный знак Венеры",
+      "sign.blue.forward": "Прямой знак Луны",
+      "sign.blue.reverse": "Обратный знак Луны",
       "piece.artifact.inward": "{sign}. К себе: {magnitude}/3",
       "piece.artifact.outward": "{sign}. От себя: {magnitude}/3",
       "piece.red.quark": "Красный {flavor}-кварк, заряд {charge} e",
@@ -689,8 +742,8 @@
       "piece.blue.antiquark": "Антисиний {flavor}-антикварк, заряд {charge} e",
       "rune.large": "Большой камень {symbol}\n{name}",
       "rune.small": "Малый камень {symbol}\n{name}",
-      "rune.u": "{name}\nАромат: u (верхний).\nРазмер значка обозначает модуль заряда, не массу.",
-      "rune.d": "{name}\nАромат: d (нижний).\nРазмер значка обозначает модуль заряда, не массу.",
+      "rune.u": "{name}\nАромат: u (верхний).\nРазмер значка обозначает модуль электрического заряда.",
+      "rune.d": "{name}\nАромат: d (нижний).\nРазмер значка обозначает модуль электрического заряда.",
       "tooltip.particle": "{kind} · заряд {charge} e",
       "tooltip.composition": "Состав:",
       "tooltip.valence": "Валентный состав: {formula}",
@@ -795,9 +848,9 @@
       "scienceSummary.artifact": "What Lies Beneath",
       "scienceSummary.instrument": "About the Quark Model",
       "science.intro": "The symbols represent quarks and antiquarks.",
-      "science.symbols": "The three sign families represent color charges; opposite orientations correspond to color and anticolor. The quark model uses u, d, and overbars for antiquarks. Icon size shows the magnitude of electric charge, not a quark's mass or physical size.",
-      "science.model": "A matching color + anticolor pair or a triple of three different colors or three different anticolors forms a closed bond here. This is a visual model of combination rules inspired by quantum chromodynamics, not a simulation of it. The center of the diagram illustrates color balance; quantum states, spin, and strong-interaction dynamics are not modeled.",
-      "science.result": "{kind}. Quark-composition analog: {analog}. Electric charge: {charge} e. Mass and spin are not determined here.",
+      "science.symbols": "The three sign families represent color charges; opposite orientations correspond to color and anticolor. The quark model uses u, d, and overbars for antiquarks. Icon size shows the magnitude of electric charge.",
+      "science.model": "Matching color + anticolor pairs and triples of three different colors or three different anticolors balance at the center of the diagram. This is a visual model of combination rules inspired by quantum chromodynamics.",
+      "science.result": "{kind}. Quark-composition analog: {analog}. Electric charge: {charge} e.",
       "science.seeking": "Color charges are not yet balanced. A closed pair corresponds to a meson; a closed triple to a baryon or antibaryon.",
       "edition.artifact": "01 · ALCHEMY",
       "edition.instrument": "02 · QUARK MODEL",
@@ -854,15 +907,15 @@
       "color.red": "red",
       "color.green": "green",
       "color.blue": "blue",
-      "family.red": "psi",
-      "family.green": "lightning",
-      "family.blue": "aether",
-      "sign.red.forward": "Forward psi sign",
-      "sign.red.reverse": "Reverse psi sign",
-      "sign.green.forward": "Forward lightning sign",
-      "sign.green.reverse": "Reverse lightning sign",
-      "sign.blue.forward": "Forward aether sign",
-      "sign.blue.reverse": "Reverse aether sign",
+      "family.red": "Mars",
+      "family.green": "Venus",
+      "family.blue": "Moon",
+      "sign.red.forward": "Forward Mars sign",
+      "sign.red.reverse": "Reverse Mars sign",
+      "sign.green.forward": "Forward Venus sign",
+      "sign.green.reverse": "Reverse Venus sign",
+      "sign.blue.forward": "Forward Moon sign",
+      "sign.blue.reverse": "Reverse Moon sign",
       "piece.artifact.inward": "{sign}. Toward you: {magnitude}/3",
       "piece.artifact.outward": "{sign}. Away from you: {magnitude}/3",
       "piece.red.quark": "Red {flavor} quark, charge {charge} e",
@@ -873,8 +926,8 @@
       "piece.blue.antiquark": "Antiblue {flavor} antiquark, charge {charge} e",
       "rune.large": "Large stone {symbol}\n{name}",
       "rune.small": "Small stone {symbol}\n{name}",
-      "rune.u": "{name}\nFlavor: u (up).\nIcon size indicates charge magnitude, not mass.",
-      "rune.d": "{name}\nFlavor: d (down).\nIcon size indicates charge magnitude, not mass.",
+      "rune.u": "{name}\nFlavor: u (up).\nIcon size indicates the magnitude of electric charge.",
+      "rune.d": "{name}\nFlavor: d (down).\nIcon size indicates the magnitude of electric charge.",
       "tooltip.particle": "{kind} · charge {charge} e",
       "tooltip.composition": "Composition:",
       "tooltip.valence": "Valence composition: {formula}",
@@ -979,9 +1032,9 @@
       "scienceSummary.artifact": "Lo que hay detrás",
       "scienceSummary.instrument": "Sobre el modelo de quarks",
       "science.intro": "Los símbolos representan quarks y antiquarks.",
-      "science.symbols": "Las tres familias representan cargas de color; las orientaciones opuestas corresponden al color y al anticolor. El modelo de quarks usa las letras u y d, y una barra superior para los antiquarks. El tamaño del símbolo indica el valor absoluto de la carga eléctrica, no la masa ni el tamaño físico del quark.",
-      "science.model": "Un par de color y su anticolor correspondiente, o un trío de tres colores distintos o de tres anticolores distintos, forman aquí una unión cerrada. Es un modelo visual de las reglas de combinación inspirado en la cromodinámica cuántica, no una simulación de esta teoría. El centro del diagrama ilustra la compensación de las cargas de color; no se modelan los estados cuánticos, el espín ni la dinámica de la interacción fuerte.",
-      "science.result": "{kind}. Análogo según su composición de quarks: {analog}. Carga eléctrica: {charge} e. Aquí no se determinan la masa ni el espín.",
+      "science.symbols": "Las tres familias representan cargas de color; las orientaciones opuestas corresponden al color y al anticolor. El modelo de quarks usa las letras u y d, y una barra superior para los antiquarks. El tamaño del símbolo indica el valor absoluto de la carga eléctrica.",
+      "science.model": "Los pares de un color y su anticolor correspondiente, así como los tríos de tres colores distintos o de tres anticolores distintos, se equilibran en el centro del diagrama. Es un modelo visual de las reglas de combinación inspirado en la cromodinámica cuántica.",
+      "science.result": "{kind}. Análogo según su composición de quarks: {analog}. Carga eléctrica: {charge} e.",
       "science.seeking": "Las cargas de color aún no están compensadas. Un par cerrado corresponde a un mesón; un trío, a un barión o antibarión.",
       "edition.artifact": "01 · ALQUIMIA",
       "edition.instrument": "02 · MODELO DE QUARKS",
@@ -1038,15 +1091,15 @@
       "color.red": "rojo",
       "color.green": "verde",
       "color.blue": "azul",
-      "family.red": "psi",
-      "family.green": "rayo",
-      "family.blue": "éter",
-      "sign.red.forward": "Signo psi directo",
-      "sign.red.reverse": "Signo psi inverso",
-      "sign.green.forward": "Signo de rayo directo",
-      "sign.green.reverse": "Signo de rayo inverso",
-      "sign.blue.forward": "Signo de éter directo",
-      "sign.blue.reverse": "Signo de éter inverso",
+      "family.red": "Marte",
+      "family.green": "Venus",
+      "family.blue": "Luna",
+      "sign.red.forward": "Signo directo de Marte",
+      "sign.red.reverse": "Signo inverso de Marte",
+      "sign.green.forward": "Signo directo de Venus",
+      "sign.green.reverse": "Signo inverso de Venus",
+      "sign.blue.forward": "Signo directo de la Luna",
+      "sign.blue.reverse": "Signo inverso de la Luna",
       "piece.artifact.inward": "{sign}. Hacia ti: {magnitude}/3",
       "piece.artifact.outward": "{sign}. Lejos de ti: {magnitude}/3",
       "piece.red.quark": "Quark {flavor} rojo, carga {charge} e",
@@ -1057,8 +1110,8 @@
       "piece.blue.antiquark": "Antiquark {flavor} antiazul, carga {charge} e",
       "rune.large": "Piedra grande {symbol}\n{name}",
       "rune.small": "Piedra pequeña {symbol}\n{name}",
-      "rune.u": "{name}\nSabor: u (arriba).\nEl tamaño del símbolo indica el valor absoluto de la carga, no la masa.",
-      "rune.d": "{name}\nSabor: d (abajo).\nEl tamaño del símbolo indica el valor absoluto de la carga, no la masa.",
+      "rune.u": "{name}\nSabor: u (arriba).\nEl tamaño del símbolo indica el valor absoluto de la carga eléctrica.",
+      "rune.d": "{name}\nSabor: d (abajo).\nEl tamaño del símbolo indica el valor absoluto de la carga eléctrica.",
       "tooltip.particle": "{kind} · carga {charge} e",
       "tooltip.composition": "Composición:",
       "tooltip.valence": "Composición de valencia: {formula}",
@@ -1163,9 +1216,9 @@
       "scienceSummary.artifact": "O que há por trás",
       "scienceSummary.instrument": "Sobre o modelo de quarks",
       "science.intro": "Por trás dos símbolos estão quarks e antiquarks.",
-      "science.symbols": "As três famílias representam cargas de cor, e as orientações opostas correspondem à cor e à anticor. No modelo de quarks, usamos u, d e uma barra sobre a letra para indicar antiquarks. O tamanho do símbolo indica o módulo da carga elétrica, não a massa nem o tamanho físico do quark.",
-      "science.model": "Um par de uma cor e sua anticor correspondente, ou um trio de três cores diferentes ou de três anticores diferentes, forma aqui uma ligação fechada. Este é um modelo visual das regras de combinação, inspirado na cromodinâmica quântica, não uma simulação dela. O centro do diagrama ilustra a compensação das cargas de cor. Estados quânticos, spin e a dinâmica da interação forte não são modelados.",
-      "science.result": "{kind}. Análogo pela composição de quarks: {analog}. Carga elétrica: {charge} e. A massa e o spin não são determinados aqui.",
+      "science.symbols": "As três famílias representam cargas de cor, e as orientações opostas correspondem à cor e à anticor. No modelo de quarks, usamos u, d e uma barra sobre a letra para indicar antiquarks. O tamanho do símbolo indica o módulo da carga elétrica.",
+      "science.model": "Pares de uma cor e sua anticor correspondente, assim como trios de três cores diferentes ou de três anticores diferentes, se equilibram no centro do diagrama. Este é um modelo visual das regras de combinação, inspirado na cromodinâmica quântica.",
+      "science.result": "{kind}. Análogo pela composição de quarks: {analog}. Carga elétrica: {charge} e.",
       "science.seeking": "As cargas de cor ainda não se compensam. Um par fechado corresponde a um méson; um trio, a um bárion ou antibárion.",
       "edition.artifact": "01 · ALQUIMIA",
       "edition.instrument": "02 · MODELO DE QUARKS",
@@ -1222,15 +1275,15 @@
       "color.red": "vermelho",
       "color.green": "verde",
       "color.blue": "azul",
-      "family.red": "psi",
-      "family.green": "raio",
-      "family.blue": "éter",
-      "sign.red.forward": "Sinal direto de psi",
-      "sign.red.reverse": "Sinal inverso de psi",
-      "sign.green.forward": "Sinal direto de raio",
-      "sign.green.reverse": "Sinal inverso de raio",
-      "sign.blue.forward": "Sinal direto de éter",
-      "sign.blue.reverse": "Sinal inverso de éter",
+      "family.red": "Marte",
+      "family.green": "Vênus",
+      "family.blue": "Lua",
+      "sign.red.forward": "Sinal direto de Marte",
+      "sign.red.reverse": "Sinal inverso de Marte",
+      "sign.green.forward": "Sinal direto de Vênus",
+      "sign.green.reverse": "Sinal inverso de Vênus",
+      "sign.blue.forward": "Sinal direto da Lua",
+      "sign.blue.reverse": "Sinal inverso da Lua",
       "piece.artifact.inward": "{sign}. Em direção a você: {magnitude}/3",
       "piece.artifact.outward": "{sign}. Para longe de você: {magnitude}/3",
       "piece.red.quark": "Quark {flavor} vermelho, carga {charge} e",
@@ -1241,8 +1294,8 @@
       "piece.blue.antiquark": "Antiquark {flavor} antiazul, carga {charge} e",
       "rune.large": "Pedra grande {symbol}\n{name}",
       "rune.small": "Pedra pequena {symbol}\n{name}",
-      "rune.u": "{name}\nSabor: u (up).\nO tamanho do símbolo indica o módulo da carga, não a massa.",
-      "rune.d": "{name}\nSabor: d (down).\nO tamanho do símbolo indica o módulo da carga, não a massa.",
+      "rune.u": "{name}\nSabor: u (up).\nO tamanho do símbolo indica o módulo da carga elétrica.",
+      "rune.d": "{name}\nSabor: d (down).\nO tamanho do símbolo indica o módulo da carga elétrica.",
       "tooltip.particle": "{kind} · carga {charge} e",
       "tooltip.composition": "Composição:",
       "tooltip.valence": "Composição de valência: {formula}",
@@ -1347,9 +1400,9 @@
       "scienceSummary.artifact": "符文背后的原理",
       "scienceSummary.instrument": "关于夸克模型",
       "science.intro": "符文背后对应的是夸克与反夸克。",
-      "science.symbols": "三个符文家族代表三种色荷，相反的朝向对应色与反色。夸克模型视图使用 u、d 以及带上划线的反夸克符号。图标大小表示电荷的绝对值，而非夸克的质量或实际大小。",
-      "science.model": "在这里，同色的色荷与反色配对，或三种不同的色荷（或反色）组成三元组，即可形成闭合组合。这是受量子色动力学启发的组合规则演示，而非量子色动力学模拟。图的中心表示色荷抵消；本模型不模拟量子态、自旋或强相互作用的动力学。",
-      "science.result": "{kind}。按夸克组成类比：{analog}。电荷：{charge} e。此处不确定质量和自旋。",
+      "science.symbols": "三个符文家族代表三种色荷，相反的朝向对应色与反色。夸克模型视图使用 u、d 以及带上划线的反夸克符号。图标大小表示电荷的绝对值。",
+      "science.model": "同色的色荷与反色配对，或三种不同的色荷（或反色）组成三元组时，会在图的中心达到平衡。这是受量子色动力学启发的组合规则演示。",
+      "science.result": "{kind}。按夸克组成类比：{analog}。电荷：{charge} e。",
       "science.seeking": "色荷尚未抵消。闭合的二元组对应介子，三元组对应重子或反重子。",
       "edition.artifact": "01 · 炼金术",
       "edition.instrument": "02 · 夸克模型",
@@ -1406,15 +1459,15 @@
       "color.red": "红",
       "color.green": "绿",
       "color.blue": "蓝",
-      "family.red": "灵能",
-      "family.green": "雷电",
-      "family.blue": "以太",
-      "sign.red.forward": "正相灵能符文",
-      "sign.red.reverse": "反相灵能符文",
-      "sign.green.forward": "正相雷电符文",
-      "sign.green.reverse": "反相雷电符文",
-      "sign.blue.forward": "正相以太符文",
-      "sign.blue.reverse": "反相以太符文",
+      "family.red": "火星",
+      "family.green": "金星",
+      "family.blue": "月亮",
+      "sign.red.forward": "正相火星符文",
+      "sign.red.reverse": "反相火星符文",
+      "sign.green.forward": "正相金星符文",
+      "sign.green.reverse": "反相金星符文",
+      "sign.blue.forward": "正相月亮符文",
+      "sign.blue.reverse": "反相月亮符文",
       "piece.artifact.inward": "{sign}。朝向施法者：{magnitude}/3",
       "piece.artifact.outward": "{sign}。远离施法者：{magnitude}/3",
       "piece.red.quark": "红色 {flavor} 夸克，电荷 {charge} e",
@@ -1425,8 +1478,8 @@
       "piece.blue.antiquark": "反蓝色 {flavor} 反夸克，电荷 {charge} e",
       "rune.large": "大符石 {symbol}\n{name}",
       "rune.small": "小符石 {symbol}\n{name}",
-      "rune.u": "{name}\n味：u（上夸克）。\n图标大小表示电荷的绝对值，而非质量。",
-      "rune.d": "{name}\n味：d（下夸克）。\n图标大小表示电荷的绝对值，而非质量。",
+      "rune.u": "{name}\n味：u（上夸克）。\n图标大小表示电荷的绝对值。",
+      "rune.d": "{name}\n味：d（下夸克）。\n图标大小表示电荷的绝对值。",
       "tooltip.particle": "{kind} · 电荷 {charge} e",
       "tooltip.composition": "组成：",
       "tooltip.valence": "价夸克组成：{formula}",
@@ -1526,9 +1579,9 @@
     const colorNames = Object.fromEntries(colors.map(color => [color, '']));
     colors.forEach(color => Object.defineProperty(colorNames, color, { enumerable: true, get: () => t(`color.${color}`) }));
     const families = {
-      red: { label: 'Ψ', get name() { return t('family.red'); }, path: 'M24 37V14M13 16V22Q13 28 24 28Q35 28 35 22V16' },
-      green: { label: 'ϟ', get name() { return t('family.green'); }, path: 'M29 10 16 25H25L19 38 33 21H24Z' },
-      blue: { label: '⟡', get name() { return t('family.blue'); }, path: 'M24 9Q21 21 12 24Q21 27 24 39Q27 27 36 24Q27 21 24 9Z' }
+      red: { label: '♂', get name() { return t('family.red'); }, path: 'M29.5 29A9 9 0 1 1 11.5 29A9 9 0 1 1 29.5 29ZM26.9 22.6 36.5 13M28.5 13H36.5V21' },
+      green: { label: '♀', get name() { return t('family.green'); }, path: 'M33 20A9 9 0 1 1 15 20A9 9 0 1 1 33 20ZM24 29V40M18 35H30' },
+      blue: { label: '☾', get name() { return t('family.blue'); }, path: 'M34.6 13.5A14 14 0 1 0 34.6 37.5A15 15 0 0 1 34.6 13.5Z' }
     };
     const vectors = { red: { x: 0, y: -1 }, green: { x: -Math.sqrt(3) / 2, y: .5 }, blue: { x: Math.sqrt(3) / 2, y: .5 } };
     const center = { x: 320, y: 294 };
@@ -1548,10 +1601,10 @@
     let slots = [null, null, null];
     const abilities = Array(6).fill(null);
     const actions = [
-      { id: 'compression', path: 'M31 31 43 43M36 43H43V36M69 31 57 43M57 36V43H64M31 69 43 57M36 57H43V64M69 69 57 57M57 64V57H64M50 44 56 50 50 56 44 50Z' },
-      { id: 'attraction', path: 'M70 50H40M48 42 40 50 48 58' },
+      { id: 'compression', path: 'M31 31 43 43M36 43H43V36M69 31 57 43M57 36V43H64M31 69 43 57M36 57H43V64M69 69 57 57M57 64V57H64' },
+      { id: 'attraction', path: 'M72 50H44M52 42 44 50 52 58' },
       { id: 'holding', path: 'M38 38H62V62H38ZM50 28V38M50 62V72M28 50H38M62 50H72' },
-      { id: 'repulsion', path: 'M40 50H70M62 42 70 50 62 58' },
+      { id: 'repulsion', path: 'M44 50H72M64 42 72 50 64 58' },
       { id: 'dispersion', path: 'M43 43 31 31M31 38V31H38M57 43 69 31M62 31H69V38M43 57 31 69M31 62V69H38M57 57 69 69M62 69H69V62' }
     ];
     actions.forEach((action, index) => {
@@ -1593,10 +1646,11 @@
     function sealIcon(ids) {
       const { action, small } = abilityInfo(ids);
       const directional = action.id === 'attraction' || action.id === 'repulsion';
+      const objectX = directional ? 34 : 50;
       return `<svg class="seal-icon" data-action="${action.id}" data-size="${small ? 'small' : 'large'}" width="100" height="100" viewBox="0 0 100 100" aria-hidden="true">
         <circle class="seal-rim" cx="50" cy="50" r="${small ? 32 : 40}"/>
         ${small ? '' : '<circle class="seal-rim" cx="50" cy="50" r="35"/><path class="seal-rim" d="M50 5V14M11 73 19 69M89 73 81 69"/>'}
-        <g class="seal-symbol"><path d="${action.path}"/><circle cx="${directional ? 32 : 50}" cy="50" r="2" fill="currentColor" stroke="none"/></g>
+        <g class="seal-symbol"><path class="seal-action" d="${action.path}"/><path class="seal-object" d="M0-6 6 0 0 6-6 0Z" transform="translate(${objectX} 50)"/><circle cx="${objectX}" cy="50" r="2" fill="currentColor" stroke="none"/></g>
       </svg>`;
     }
 
@@ -1652,10 +1706,12 @@
       const magnitude = Math.abs(piece.charge);
       const size = insideField || magnitude === 2 ? 1 : .57;
       const tag = insideField ? 'g' : 'svg';
+      const scaleX = piece.anti && piece.color !== 'green' ? -.9 : .9;
+      const scaleY = piece.anti && piece.color !== 'blue' ? -.9 : .9;
       return `<${tag} class="rune rune-${piece.anti ? 'reverse' : 'forward'} magnitude-${magnitude}" ${insideField ? '' : 'viewBox="0 0 48 54"'} aria-hidden="true" focusable="false">
         <g class="${insideField ? 'rune-etching' : 'rune-stone'}" transform="translate(24 26) scale(${size}) translate(-24 -26)">
           <path class="rune-frame" d="M24 2 44 14V38L24 50 4 38V14Z"/>
-          <path class="rune-glyph artifact-only" d="${families[piece.color].path}" transform="translate(0 1)"/>
+          <path class="rune-glyph artifact-only" d="${families[piece.color].path}" transform="translate(24 26) scale(${scaleX} ${scaleY}) translate(-24 -25.5)"/>
           <text class="quark-glyph instrument-only" x="24" y="32">${piece.flavor || piece.color[0]}${piece.anti ? '\u0304' : ''}</text>
         </g>
       </${tag}>`;
@@ -1781,7 +1837,7 @@
             <span class="socket-face"><svg class="socket-outlines" viewBox="0 0 76 82" aria-hidden="true"><path class="socket-outline-large" d="M38 3 71 22V60L38 79 5 60V22Z"/><path class="socket-outline-small" d="M38 3 71 22V60L38 79 5 60V22Z" transform="translate(38 41) scale(.57) translate(-38 -41)"/></svg>${content}<svg class="socket-highlight" viewBox="0 0 76 82" aria-hidden="true"><path d="M38 3 71 22V60L38 79 5 60V22Z"/></svg></span>
             ${piece ? `<span class="piece-charge">${fractionText(piece.charge)}</span>` : targets}</${tag}>`;
         }).join('');
-        return `<div class="orbit-slot axis-node ${color} ${indices.length ? 'active' : ''} ${indices.length > 1 ? 'multiple' : ''}" data-axis="${color}-${anti}" style="left:${x / 640 * 100}%;top:${y / 600 * 100}%">${sockets}</div>`;
+        return `<div class="orbit-slot axis-node ${color} ${y > center.y ? 'lower-axis' : ''} ${indices.length ? 'active' : ''} ${indices.length > 1 ? 'multiple' : ''}" data-axis="${color}-${anti}" style="left:${x / 640 * 100}%;top:${y / 600 * 100}%">${sockets}</div>`;
       })).join('');
       $('slotCount').textContent = t(`slots.count.${artifact ? 'artifact' : 'instrument'}`, { count });
       const capacityLabel = t('slots.capacity', { free: slots.length - count, total: slots.length });
@@ -1862,6 +1918,21 @@
     }
 
     function renderDial() {
+      // Center both reading directions on the same band between radii 251 and 285.
+      $('manuscriptLegend').innerHTML = colors.flatMap(color => [false, true].map(anti => {
+        const sign = anti ? -1 : 1;
+        const angle = Math.atan2(vectors[color].y * sign, vectors[color].x * sign);
+        const lower = vectors[color].y * sign > 0;
+        const radius = 268;
+        const halfArc = 26 * Math.PI / 180;
+        const start = angle + (lower ? halfArc : -halfArc);
+        const end = angle + (lower ? -halfArc : halfArc);
+        const id = `inscription-${color}-${anti ? 'reverse' : 'forward'}`;
+        const arc = `M${center.x + Math.cos(start) * radius} ${center.y + Math.sin(start) * radius}A${radius} ${radius} 0 0 ${lower ? 0 : 1} ${center.x + Math.cos(end) * radius} ${center.y + Math.sin(end) * radius}`;
+        return `<g class="${color}"><defs><path id="${id}" d="${arc}"/></defs>
+          <path transform="translate(${center.x} ${center.y}) rotate(${angle * 180 / Math.PI + 30})" d="M252 0H285"/>
+          <text class="manuscript-inscription" text-anchor="middle"><textPath href="#${id}" startOffset="50%" data-i18n="sign.${color}.${anti ? 'reverse' : 'forward'}"></textPath></text></g>`;
+      })).join('');
       $('dialTicks').innerHTML = Array.from({ length: 90 }, (_, i) => {
         const angle = i * Math.PI * 2 / 90;
         const major = i % 5 === 0;
@@ -1919,8 +1990,9 @@
       const now = performance.now();
       motion.from = currentPosition(now);
       motion.target = { x: center.x + vector.x * vectorScale, y: center.y + vector.y * vectorScale };
-      // A completed seal and its strands must agree on the very first rendered frame.
-      if (result.valid || !chosen.length) motion.from = { ...motion.target };
+      $('focus').classList.toggle('focus-appearing', !strandElements.length && chosen.length > 0 && !result.valid);
+      // A new focus appears at its target; completed seals also align on their first frame.
+      if (!strandElements.length || result.valid || !chosen.length) motion.from = { ...motion.target };
       motion.startedAt = now;
       $('strands').innerHTML = chosen.map(piece => `<path class="strand strand-glow ${piece.color}"/><path class="strand ${piece.color} ${piece.anti ? 'reverse' : ''}"/>`).join('');
       const screenToField = $('field').getScreenCTM().inverse();
@@ -1935,6 +2007,7 @@
       const radius = 35 + Math.abs(charge) * 2;
       const reverse = result.kind === 'antibaryon' ? -1 : 1;
       if (result.valid) {
+        $('sealBackplate').setAttribute('r', chosen.length === 2 ? 32 : 40);
         const shape = result.kind === 'meson'
           ? `<ellipse cx="320" cy="294" rx="${radius}" ry="${radius * .56}" transform="rotate(-35 320 294)"/><ellipse cx="320" cy="294" rx="${radius}" ry="${radius * .56}" transform="rotate(35 320 294)"/>`
           : `<path d="M320 ${294 - radius * reverse} ${320 - radius * .866} ${294 + radius * .5 * reverse} ${320 + radius * .866} ${294 + radius * .5 * reverse}Z"/><circle cx="320" cy="294" r="${radius * .53}"/>`;
@@ -1988,7 +2061,7 @@
       const piece = byId[id];
       $('preview').setAttribute('class', piece.color);
       $('preview').removeAttribute('hidden');
-      $('previewPath').setAttribute('d', `M${motion.target.x} ${motion.target.y}L${x} ${y}`);
+      $('previewPath').setAttribute('d', slots.some(Boolean) ? `M${motion.target.x} ${motion.target.y}L${x} ${y}` : '');
       for (const name of ['previewDot', 'previewRing']) {
         $(name).setAttribute('cx', x);
         $(name).setAttribute('cy', y);

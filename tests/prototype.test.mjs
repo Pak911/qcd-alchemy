@@ -654,6 +654,12 @@ describe('Seals and reserved inventory', () => {
       assert.equal(await page.locator('#bindSeal').isVisible(), true);
       const icon = page.locator('#alchemySeal .seal-icon');
       const key = `${await icon.getAttribute('data-size')}:${await icon.getAttribute('data-action')}`;
+      for (const root of ['#alchemySeal', '#abilityPreview']) {
+        assert.equal(await page.locator(`${root} .seal-object`).count(), 1);
+        assert.equal(await page.locator(`${root} .seal-object`).getAttribute('d'), 'M0-6 6 0 0 6-6 0Z');
+        assert.equal(await page.locator(`${root} .seal-symbol circle`).getAttribute('r'), '2');
+      }
+      if (!variants.has(key)) await page.locator('#abilityPreview').screenshot({ path: path.join(artifacts, `seal-object-${key.replace(':', '-')}.png`) });
       variants.add(key);
       assert.equal(await icon.isVisible(), true);
       assert.equal(await page.locator('#chargeValue').isVisible(), false);
@@ -861,8 +867,8 @@ describe('Ability modes and descriptions', () => {
   it('explains runes on hover and keyboard focus and saved ingredients on inspection', async () => {
     const tooltip = page.locator('#runeTooltip');
     await piece('d-r').hover();
-    assert.match(await tooltip.textContent(), /^Малый камень Ψ\n/);
-    assert.match(await tooltip.textContent(), /пси.*К себе: 1\/3/s);
+    assert.match(await tooltip.textContent(), /^Малый камень ♂\n/);
+    assert.match(await tooltip.textContent(), /Марса.*К себе: 1\/3/s);
     assert.equal(await tooltip.isVisible(), true);
     assert.deepEqual(await selected(), [null, null, null]);
     await tooltip.hover();
@@ -871,12 +877,12 @@ describe('Ability modes and descriptions', () => {
     await page.keyboard.press('Escape');
     assert.equal(await tooltip.isVisible(), false);
     await piece('u-b').hover();
-    assert.match(await tooltip.textContent(), /^Большой камень ⟡\n/);
-    assert.match(await tooltip.textContent(), /Прямой знак эфира/);
+    assert.match(await tooltip.textContent(), /^Большой камень ☾\n/);
+    assert.match(await tooltip.textContent(), /Прямой знак Луны/);
     await piece('au-b').hover();
-    assert.match(await tooltip.textContent(), /Обратный знак эфира/);
+    assert.match(await tooltip.textContent(), /Обратный знак Луны/);
     await piece('u-g').focus();
-    assert.match(await tooltip.textContent(), /молнии.*От себя: 2\/3/s);
+    assert.match(await tooltip.textContent(), /Венеры.*От себя: 2\/3/s);
     assert.equal(await piece('u-g').getAttribute('aria-describedby'), 'runeTooltip');
     await page.keyboard.press('Enter');
     assert.deepEqual(await selected(), ['u-g', null, null]);
@@ -896,19 +902,68 @@ describe('Ability modes and descriptions', () => {
 });
 
 describe('Seal presentation and focus', () => {
-  it('centers one directional arrow and the player point in both seal sizes', async () => {
+  it('covers incoming strands with an opaque seal backplate below the glow and central symbol', async () => {
+    const backplate = page.locator('#sealBackplate');
+    assert.equal(await backplate.isVisible(), false);
+    for (const ids of [['u-r', 'ad-r'], ['u-r', 'u-g', 'd-b']]) {
+      await page.evaluate(ids => setRecipe(ids), ids);
+      const layers = await page.evaluate(() => {
+        const plate = $('sealBackplate');
+        const style = getComputedStyle(plate);
+        const follows = (before, after) => !!(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING);
+        return { opaque: style.opacity === '1' && style.fillOpacity === '1' && style.fill === getComputedStyle(document.body).backgroundColor,
+          ordered: follows($('strands'), plate) && follows(plate, document.querySelector('.target-light')) && follows(document.querySelector('.target-light'), $('alchemySeal')),
+          radius: plate.getAttribute('r'), rim: $('alchemySeal').querySelector('.seal-rim').getAttribute('r') };
+      });
+      assert.equal(await backplate.isVisible(), true);
+      assert.ok(layers.opaque && layers.ordered, 'The solid surface hides strands while allowing the glow above it');
+      assert.equal(layers.radius, layers.rim);
+      assert.equal(await page.locator('#abilityPreview .seal-backplate').count(), 0);
+      await page.locator('#chamber').screenshot({ path: path.join(artifacts, `opaque-seal-${ids.length}.png`) });
+      await page.locator('[data-theme-choice="instrument"]').click();
+      assert.equal(await backplate.isVisible(), false);
+      await page.locator('[data-theme-choice="artifact"]').click();
+      assert.equal(await backplate.isVisible(), true);
+      await page.evaluate(() => removePiece(0));
+      assert.equal(await backplate.isVisible(), false);
+    }
+  });
+
+  it('gives direct and reverse stones equal glow while keeping ghost sockets and scientific glyphs unlit', async () => {
+    for (const color of ['r', 'g', 'b']) {
+      for (const flavor of ['u', 'd']) {
+        const filter = id => piece(id).locator('.rune-glyph').evaluate(node => getComputedStyle(node).filter);
+        assert.match(await filter(`${flavor}-${color}`), /drop-shadow/);
+        assert.equal(await filter(`${flavor}-${color}`), await filter(`a${flavor}-${color}`));
+      }
+    }
+    const ghosts = await page.locator('.socket-ghost .rune-glyph').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).filter));
+    assert.ok(ghosts.length > 0 && ghosts.every(filter => filter === 'none'));
+    await page.evaluate(() => setRecipe(['u-r', 'au-r']));
+    const occupied = await page.locator('.socket.filled .rune-glyph').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).filter));
+    assert.match(occupied[0], /drop-shadow/);
+    assert.equal(occupied[0], occupied[1]);
+    await page.locator('[data-theme-choice="instrument"]').click();
+    assert.ok(await page.locator('.rune-glyph').evaluateAll(nodes => nodes.every(node => getComputedStyle(node).filter === 'none')));
+    await page.locator('[data-theme-choice="artifact"]').click();
+    await page.locator('#reset').click();
+    await page.locator('#palette').screenshot({ path: path.join(artifacts, 'equal-planetary-glow.png') });
+  });
+
+  it('centers one directional arrow and the shared diamond object in both seal sizes', async () => {
     const cases = [
-      ['attraction', ['d-r', 'au-r'], 'M70 50H40M48 42 40 50 48 58'],
-      ['attraction', ['au-r', 'au-g', 'ad-b'], 'M70 50H40M48 42 40 50 48 58'],
-      ['repulsion', ['u-r', 'ad-r'], 'M40 50H70M62 42 70 50 62 58'],
-      ['repulsion', ['u-r', 'u-g', 'd-b'], 'M40 50H70M62 42 70 50 62 58']
+      ['attraction', ['d-r', 'au-r'], 'M72 50H44M52 42 44 50 52 58'],
+      ['attraction', ['au-r', 'au-g', 'ad-b'], 'M72 50H44M52 42 44 50 52 58'],
+      ['repulsion', ['u-r', 'ad-r'], 'M44 50H72M64 42 72 50 64 58'],
+      ['repulsion', ['u-r', 'u-g', 'd-b'], 'M44 50H72M64 42 72 50 64 58']
     ];
     for (const [action, ids, shape] of cases) {
       await page.evaluate(ids => setRecipe(ids), ids);
       for (const root of ['#alchemySeal', '#abilityPreview']) {
         const symbol = page.locator(`${root} .seal-symbol`);
-        assert.equal(await symbol.locator('path').getAttribute('d'), shape);
-        assert.equal(await symbol.locator('circle').getAttribute('cx'), '32');
+        assert.equal(await symbol.locator('.seal-action').getAttribute('d'), shape);
+        assert.equal(await symbol.locator('.seal-object').getAttribute('transform'), 'translate(34 50)');
+        assert.equal(await symbol.locator('circle').getAttribute('cx'), '34');
         assert.deepEqual(await symbol.evaluate(node => {
           const box = node.getBBox();
           return [box.x + box.width / 2, box.y + box.height / 2];
@@ -916,8 +971,9 @@ describe('Seal presentation and focus', () => {
       }
       if (ids.length === 3) await page.screenshot({ path: path.join(artifacts, `${action}-directional-seal.png`), fullPage: true });
       await page.locator('#bindSeal').click();
-      assert.equal(await page.locator('.ability-card .seal-symbol path').getAttribute('d'), shape);
-      assert.equal(await page.locator('.ability-card .seal-symbol circle').getAttribute('cx'), '32');
+      assert.equal(await page.locator('.ability-card .seal-action').getAttribute('d'), shape);
+      assert.equal(await page.locator('.ability-card .seal-object').getAttribute('d'), 'M0-6 6 0 0 6-6 0Z');
+      assert.equal(await page.locator('.ability-card .seal-symbol circle').getAttribute('cx'), '34');
       await page.locator('#releaseAll').click();
     }
   });
@@ -978,6 +1034,73 @@ describe('Seal presentation and focus', () => {
 });
 
 describe('Focus synchronization regressions', () => {
+  it('appears at the first contribution without a path from the empty center and moves only between existing positions', async () => {
+    for (const reducedMotion of ['no-preference', 'reduce']) {
+      await page.emulateMedia({ reducedMotion });
+      for (const theme of ['artifact', 'instrument']) {
+        await page.locator(`[data-theme-choice="${theme}"]`).click();
+        await page.evaluate(() => { abilities.fill(null); slots = [null, null, null]; render(); });
+        await piece('u-r').hover();
+        assert.equal(await page.locator('#previewDot').isVisible(), true);
+        assert.equal(await page.locator('#previewPath').getAttribute('d'), '');
+        assert.equal(await page.locator('#previewRing').isVisible(), false);
+        const first = await page.evaluate(() => {
+          const preview = { x: Number($('previewDot').getAttribute('cx')), y: Number($('previewDot').getAttribute('cy')) };
+          addPiece('u-r');
+          const position = currentPosition(performance.now());
+          const transform = $('focus').transform.baseVal.consolidate().matrix;
+          return { preview, from: motion.from, target: motion.target, moving: position.moving, drawn: { x: transform.e, y: transform.f } };
+        });
+        assert.deepEqual(first.from, first.target);
+        assert.deepEqual(first.drawn, first.preview);
+        assert.equal(first.moving, false, `${theme}/${reducedMotion}: first point does not fly out of the center`);
+        const appearance = await page.evaluate(() => {
+          const node = $('focus');
+          const animation = node.getAnimations().find(animation => animation.animationName === 'focus-appear');
+          if (!animation) return { animated: false, opacity: getComputedStyle(node).opacity };
+          const savedTime = animation.currentTime;
+          animation.pause();
+          const samples = [0, 150, 300].map(time => {
+            animation.currentTime = time;
+            return { opacity: Number(getComputedStyle(node).opacity), position: node.getAttribute('transform') };
+          });
+          animation.currentTime = savedTime;
+          animation.play();
+          return { animated: true, samples };
+        });
+        assert.equal(appearance.animated, reducedMotion === 'no-preference');
+        if (appearance.animated) {
+          assert.equal(appearance.samples[0].opacity, 0);
+          assert.ok(appearance.samples[1].opacity > 0 && appearance.samples[1].opacity < 1);
+          assert.equal(appearance.samples[2].opacity, 1);
+          assert.equal(new Set(appearance.samples.map(sample => sample.position)).size, 1, 'Appearance changes opacity, not position');
+        } else assert.equal(appearance.opacity, '1');
+        await piece('u-g').hover();
+        assert.match(await page.locator('#previewPath').getAttribute('d'), /^M.+L/);
+        const second = await page.evaluate(() => {
+          addPiece('u-g');
+          return { from: motion.from, target: motion.target, moving: currentPosition(performance.now()).moving };
+        });
+        assert.equal(second.from.x, first.target.x);
+        assert.equal(second.from.y, first.target.y);
+        assert.notDeepEqual(second.target, first.target);
+        assert.equal(second.moving, reducedMotion === 'no-preference');
+        await page.waitForFunction(() => !currentPosition(performance.now()).moving);
+        const removalMoves = await page.evaluate(() => { removePiece(1); return currentPosition(performance.now()).moving; });
+        assert.equal(removalMoves, reducedMotion === 'no-preference', 'Removing the second stone still moves the existing point');
+        await page.evaluate(() => removePiece(0));
+        await socketTarget('au-b').focus();
+        assert.equal(await page.locator('#previewPath').getAttribute('d'), '');
+        assert.equal(await page.evaluate(() => { addPiece('au-b'); return currentPosition(performance.now()).moving; }), false);
+        await page.locator('#reset').click();
+        await page.evaluate(() => { setRecipe(['u-r', 'ad-r']); bindSeal(); });
+        await piece('d-b').hover();
+        assert.equal(await page.locator('#previewPath').getAttribute('d'), '');
+        assert.equal(await page.evaluate(() => { addPiece('d-b'); return currentPosition(performance.now()).moving; }), false, 'Binding also returns to an absent focus');
+      }
+    }
+  });
+
   it('vibrates occupied scientific strings without moving their endpoints or animating an empty circle', async () => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.locator('[data-theme-choice="instrument"]').click();
@@ -1061,6 +1184,28 @@ describe('Focus synchronization regressions', () => {
 });
 
 describe('Scientific vocabulary and particle examples', () => {
+  it('switches between an alchemical emblem and a three-quark emblem without changing the assembly', async () => {
+    await page.evaluate(() => setRecipe(['u-r', 'u-g', 'd-b']));
+    const brand = await page.locator('.brand-mark').boundingBox();
+    assert.equal(await page.locator('.brand-artifact').isVisible(), true);
+    assert.equal(await page.locator('.brand-instrument').isVisible(), false);
+    await page.locator('[data-theme-choice="instrument"]').click();
+    assert.equal(await page.locator('.brand-artifact').isVisible(), false);
+    assert.equal(await page.locator('.brand-instrument').isVisible(), true);
+    assert.equal(await page.locator('.brand-instrument .quark').count(), 3);
+    assert.equal(await page.locator('.brand-instrument > *').count(), 3, 'Only the three colored circles remain');
+    assert.equal(await page.locator('#field .triangle:visible').count(), 0);
+    const fills = await page.locator('.brand-instrument .quark').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).fill));
+    assert.equal(new Set(fills).size, 3);
+    const scientificBrand = await page.locator('.brand-mark').boundingBox();
+    assert.equal(scientificBrand.width, brand.width);
+    assert.equal(scientificBrand.height, brand.height);
+    await page.locator('[data-theme-choice="artifact"]').click();
+    assert.equal(await page.locator('.brand-artifact').isVisible(), true);
+    assert.equal(await page.locator('#field .triangle:visible').count(), 2);
+    assert.deepEqual(await selected(), ['u-r', 'u-g', 'd-b']);
+  });
+
   it('shows assembled scientific states above charge and clears stale names', async () => {
     await page.locator('[data-theme-choice="instrument"]').click();
     assert.equal(await page.locator('#stateName').isVisible(), false);
@@ -1122,7 +1267,7 @@ describe('Scientific vocabulary and particle examples', () => {
     assert.match(await page.locator('#runeTooltip').textContent(), /Красный d-кварк, заряд −1\/3 e/);
     await piece('au-b').hover();
     assert.match(await page.locator('#runeTooltip').textContent(), /Антисиний u-антикварк, заряд −2\/3 e/);
-    assert.doesNotMatch(await page.locator('#runeTooltip').textContent(), /камень|Обратный знак|эфир/);
+    assert.doesNotMatch(await page.locator('#runeTooltip').textContent(), /камень|Обратный знак|Марс|Венер|Лун/);
     await piece('u-r').click();
     assert.equal(await page.locator('#balanceValue').textContent(), 'Не скомпенсирован');
     await page.locator('[data-theme-choice="artifact"]').click();
@@ -1327,6 +1472,193 @@ describe('Touch rune inspection', () => {
 });
 
 describe('Responsive presentation', () => {
+  it('keeps circular contours at a stable stroke width across viewport sizes and pixel densities', async () => {
+    for (const deviceScaleFactor of [1, 2]) {
+      const probeContext = await browser.newContext({ deviceScaleFactor, reducedMotion: 'reduce', locale: 'ru-RU' });
+      try {
+        const probe = await probeContext.newPage();
+        probe.on('pageerror', error => errors.push(error.message));
+        probe.on('request', request => { if (/^https?:/.test(request.url())) externalRequests.push(request.url()); });
+        await probe.goto(url);
+        await probe.evaluate(() => setRecipe(['u-r', 'u-g', 'u-b']));
+        for (const width of [390, 1440]) {
+          await probe.setViewportSize({ width, height: 1000 });
+          const contours = await probe.locator('#field :is(.engraving, .manuscript-ornament) circle').evaluateAll(nodes => nodes.map(node => {
+            const style = getComputedStyle(node);
+            return { width: style.strokeWidth, effect: style.vectorEffect, rendering: style.shapeRendering };
+          }));
+          assert.ok(contours.length > 0);
+          assert.ok(contours.every(contour => contour.width === '1px' && contour.effect === 'non-scaling-stroke' && contour.rendering.toLowerCase() === 'geometricprecision'));
+          assert.equal(await probe.locator('.manuscript-inscription').first().evaluate(node => getComputedStyle(node).fontSize), '19px');
+          await probe.locator('#chamber').screenshot({ path: path.join(artifacts, `contours-${width}-dpr${deviceScaleFactor}.png`) });
+        }
+      } finally {
+        await probeContext.close();
+      }
+    }
+  });
+
+  it('keeps enlarged celestial signs within a separate double-ring track without crowding controls', async () => {
+    await page.evaluate(() => setRecipe(['u-r', 'ad-r']));
+    assert.equal(await page.locator('.celestial-orbit .sun').count(), 1);
+    assert.equal(await page.locator('.celestial-orbit > *').count(), 8);
+    assert.deepEqual(await page.locator('.celestial-orbit [data-alchemical]').evaluateAll(nodes => nodes.map(node => node.dataset.alchemical).sort()), ['air', 'fire', 'salt', 'saturn']);
+    assert.equal(await page.locator('.celestial-orbit .comet').count(), 1);
+    assert.equal(await page.locator('.celestial-orbit .moon, .celestial-orbit [data-alchemical="mercury"]').count(), 0);
+    assert.equal(await page.evaluate(() => [...document.querySelectorAll('.celestial-orbit path')].some(node =>
+      Object.values(families).some(family => family.path === node.getAttribute('d')))), false, 'Decorative signs do not reuse the three core glyphs');
+    assert.equal(await page.locator('.celestial-orbit ellipse').count(), 0);
+    assert.equal(await page.locator('.celestial-track circle').count(), 2);
+    for (const width of [320, 390, 768, 1440, 2560]) {
+      await page.setViewportSize({ width, height: width === 2560 ? 1440 : 1000 });
+      for (const angle of [0, 45, 90, 180, 270]) {
+        const geometry = await page.evaluate(angle => {
+          const orbit = document.querySelector('.celestial-orbit');
+          orbit.style.transform = `rotate(${angle}deg)`;
+          const field = document.querySelector('#field').getBoundingClientRect();
+          const track = document.querySelector('.celestial-track').getBoundingClientRect();
+          const radii = [...orbit.children].flatMap(node => {
+            const box = node.getBBox();
+            const matrix = node.getScreenCTM();
+            return [box.x, box.x + box.width].flatMap(x => [box.y, box.y + box.height].map(y => {
+              const point = new DOMPoint(x, y).matrixTransform(matrix);
+              return Math.hypot((point.x - field.left) * 640 / field.width - 320, (point.y - field.top) * 600 / field.height - 294);
+            }));
+          });
+          const aligned = [...orbit.querySelectorAll('[data-alchemical]')].every(node => {
+            const matrix = node.getScreenCTM();
+            const dx = matrix.e - (field.left + field.width * 320 / 640);
+            const dy = matrix.f - (field.top + field.height * 294 / 600);
+            const tangentDot = (matrix.a * dx + matrix.b * dy) / (Math.hypot(matrix.a, matrix.b) * Math.hypot(dx, dy));
+            return Math.abs(tangentDot) < .00001 && -matrix.c * dx - matrix.d * dy > 0;
+          });
+          return { radii, aligned, fits: document.documentElement.scrollWidth <= innerWidth,
+            topClear: track.top > document.querySelector('#capacity').getBoundingClientRect().bottom,
+            bottomClear: track.bottom < document.querySelector('.field-status').getBoundingClientRect().top };
+        }, angle);
+        assert.ok(geometry.radii.every(radius => radius > 285 && radius < 319), `${width}/${angle}: signs stay between the two bands`);
+        assert.ok(geometry.aligned, `${width}/${angle}: symbol bases follow the tangent and their tops face outward`);
+        assert.ok(geometry.fits && geometry.topClear && geometry.bottomClear, `${width}/${angle}: track clears controls and viewport edges`);
+      }
+    }
+  });
+
+  it('turns diamonds continuously and wakes counter-rotating celestial signs only for completed seals', async () => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const motion = () => page.evaluate(() => ['.orbit', '.celestial-orbit'].map(selector => {
+      const style = getComputedStyle(document.querySelector(selector));
+      return { name: style.animationName, direction: style.animationDirection, play: style.animationPlayState, visible: style.visibility };
+    }));
+    assert.deepEqual(await motion(), [
+      { name: 'orbit-turn', direction: 'normal', play: 'running', visible: 'visible' },
+      { name: 'orbit-turn', direction: 'reverse', play: 'paused', visible: 'hidden' }
+    ]);
+    await piece('u-r').click();
+    assert.equal((await motion())[1].play, 'paused');
+    await piece('ad-r').click();
+    assert.equal(await state(), 'balanced');
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.celestial-orbit')).visibility === 'visible');
+    assert.equal((await motion())[1].play, 'running');
+    assert.equal((await motion())[1].visible, 'visible');
+    const turns = await page.evaluate(() => ['.orbit', '.celestial-orbit'].map(selector => {
+      const node = document.querySelector(selector);
+      const animation = node.getAnimations().find(animation => animation.animationName === 'orbit-turn');
+      const savedTime = animation.currentTime;
+      animation.pause();
+      animation.currentTime = 1000;
+      const first = new DOMMatrix(getComputedStyle(node).transform);
+      animation.currentTime = 2000;
+      const second = new DOMMatrix(getComputedStyle(node).transform);
+      animation.currentTime = savedTime;
+      animation.play();
+      return second.b - first.b;
+    }));
+    assert.ok(turns[0] > 0 && turns[1] < 0, 'The two orbits really turn in opposite directions');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    assert.ok((await motion()).every(orbit => orbit.name === 'none'));
+    assert.equal((await motion())[1].visible, 'visible', 'Reduced motion keeps completed celestial signs static');
+    await piece('u-b').click();
+    assert.notEqual(await state(), 'balanced');
+    assert.equal((await motion())[1].visible, 'hidden');
+    await page.locator('#reset').click();
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    assert.equal((await motion())[0].play, 'running');
+    assert.equal((await motion())[1].play, 'paused');
+    await page.evaluate(() => setRecipe(['u-r', 'u-g', 'u-b']));
+    assert.equal((await motion())[1].play, 'running');
+    await page.locator('[data-theme-choice="instrument"]').click();
+    assert.ok((await motion()).every(orbit => orbit.name === 'none'));
+    assert.equal(await page.locator('.celestial-orbit').isVisible(), false);
+    await page.locator('[data-theme-choice="artifact"]').click();
+    assert.equal((await motion())[1].play, 'running');
+    await page.locator('#bindSeal').click();
+    assert.equal(await state(), 'empty');
+    assert.equal((await motion())[0].play, 'running');
+    assert.equal((await motion())[1].play, 'paused');
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.celestial-orbit')).visibility === 'hidden');
+  });
+
+  it('keeps stone contributions inside the manuscript inscription band at every viewport size', async () => {
+    for (const width of [320, 390, 768, 1440, 2560]) {
+      await page.setViewportSize({ width, height: width === 2560 ? 1440 : 1000 });
+      for (const ids of [['u-r', 'u-g', 'u-b'], ['au-r', 'au-g', 'au-b'], ['u-r', 'd-r', 'ad-r']]) {
+        await page.evaluate(ids => setRecipe(ids), ids);
+        const radii = await page.evaluate(() => {
+          const field = document.querySelector('#field').getBoundingClientRect();
+          return [...document.querySelectorAll('.socket .piece-charge')].flatMap(node => {
+            const box = node.getBoundingClientRect();
+            return [box.left, box.right].flatMap(x => [box.top, box.bottom].map(y =>
+              Math.hypot((x - field.left) * 640 / field.width - 320, (y - field.top) * 600 / field.height - 294)));
+          });
+        });
+        assert.equal(radii.length, 12);
+        assert.ok(radii.every(radius => radius < 250), `${width}/${ids}: contributions do not enter the inscription band`);
+      }
+    }
+  });
+
+  it('keeps the dark manuscript legible and meaningful light visible without changing the scientific theme', async () => {
+    const contrast = await page.evaluate(() => {
+      const style = getComputedStyle(document.documentElement);
+      const luminance = name => style.getPropertyValue(name).trim().slice(1).match(/../g)
+        .map(value => parseInt(value, 16) / 255)
+        .map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4)
+        .reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+      const background = luminance('--bg');
+      return { background, text: ['--ink', '--muted', '--accent'].map(name => (luminance(name) + .05) / (background + .05)),
+        pigments: ['--red', '--green', '--blue'].map(name => (luminance(name) + .05) / (background + .05)) };
+    });
+    assert.ok(contrast.background < .01, 'The original near-black background is restored');
+    assert.ok(contrast.text.every(ratio => ratio >= 4.5), 'Text contrasts with the dark background');
+    assert.ok(contrast.pigments.every(ratio => ratio >= 3), 'Colored glyphs remain distinct from the background');
+    assert.equal(await page.locator('body').evaluate(node => getComputedStyle(node).backgroundColor), 'rgb(16, 15, 16)');
+    for (const selector of ['h1', '#libraryTitle', '#abilitiesTitle']) {
+      assert.equal(await page.locator(selector).evaluate(node => getComputedStyle(node, '::first-letter').color === getComputedStyle(node).color), true);
+    }
+    assert.equal(await page.locator('.manuscript-ornament').isVisible(), true);
+    await socketTarget('u-r').focus();
+    const highlight = page.locator('[data-axis="red-false"] .socket-highlight');
+    assert.equal(await page.locator('#preview').isVisible(), true);
+    assert.equal(await highlight.evaluate(node => getComputedStyle(node).opacity), '1');
+    assert.match(await highlight.evaluate(node => getComputedStyle(node).filter), /drop-shadow/);
+    await page.keyboard.press('Enter');
+    assert.equal(await page.locator('.capacity-dot.spent').count(), 1);
+    assert.equal(await page.locator('#focus').evaluate(node => getComputedStyle(node).opacity), '1');
+    await piece('ad-r').click();
+    assert.equal(await state(), 'balanced');
+    assert.equal(await page.locator('#alchemySeal').evaluate(node => getComputedStyle(node).opacity), '1');
+    assert.equal(await page.locator('#bindSeal').isVisible(), true);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    assert.equal(await page.locator('.orbit').evaluate(node => getComputedStyle(node).animationName), 'orbit-turn');
+    await page.locator('[data-theme-choice="instrument"]').click();
+    assert.equal(await page.locator('.manuscript-ornament').isVisible(), false);
+    assert.equal(await page.locator('body').evaluate(node => getComputedStyle(node).backgroundColor), 'rgb(12, 18, 26)');
+    await page.locator('[data-theme-choice="artifact"]').click();
+    assert.deepEqual(await selected(), ['u-r', 'ad-r', null]);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    assert.equal(await page.locator('.orbit').evaluate(node => getComputedStyle(node).animationName), 'none');
+  });
+
   it('keeps the target stationary and dominant while the light point leaves and returns', async () => {
     const geometry = () => page.evaluate(() => {
       const target = document.querySelector('#centerTarget');
@@ -1381,7 +1713,7 @@ describe('Responsive presentation', () => {
     assert.equal(await page.locator('.examples .dice').count(), 3);
   });
 
-  it('centers the alchemical trident and uses quark notation in the scientific theme', async () => {
+  it('centers all three planetary glyphs and uses quark notation in the scientific theme', async () => {
     for (const theme of ['artifact', 'instrument']) {
       await page.locator(`[data-theme-choice="${theme}"]`).click();
       assert.equal(await page.locator('.stone-face, .rune-mark').count(), 0);
@@ -1390,7 +1722,7 @@ describe('Responsive presentation', () => {
         assert.equal(await piece('u-r').locator('.rune-glyph').isVisible(), false);
         continue;
       }
-      const positions = await page.locator('#palette .piece.red').evaluateAll(nodes => nodes.map(node => {
+      const positions = await page.locator('#palette .piece').evaluateAll(nodes => nodes.map(node => {
         const glyph = node.querySelector('.rune-glyph').getBoundingClientRect();
         const stone = node.querySelector('.rune-frame').getBoundingClientRect();
         return {
@@ -1398,13 +1730,49 @@ describe('Responsive presentation', () => {
           y: (glyph.y + glyph.height / 2 - stone.y) / stone.height
         };
       }));
-      assert.equal(positions.length, 4);
+      assert.equal(positions.length, 12);
       for (const position of positions) {
-        assert.ok(Math.abs(position.x - .5) < .01, 'Trident is horizontally centered');
-        assert.ok(position.y >= .5 && position.y <= .53, 'Trident sits slightly below the geometric center');
+        assert.ok(Math.abs(position.x - .5) < .01, 'Planetary glyph is horizontally centered');
+        assert.ok(Math.abs(position.y - .5) < .01, 'Planetary glyph is vertically centered');
       }
-      await page.locator('#palette .family.red').screenshot({ path: path.join(artifacts, `trident-${theme}.png`) });
+      assert.deepEqual(await page.evaluate(() => Object.values(families).map(family => family.label)), ['♂', '♀', '☾']);
+      assert.equal(await piece('u-b').locator('.rune-glyph').evaluate(node => getComputedStyle(node).strokeDasharray), 'none');
+      assert.equal(await piece('au-b').locator('.rune-glyph').evaluate(node => getComputedStyle(node).strokeDasharray), 'none');
+      await page.locator('#palette').screenshot({ path: path.join(artifacts, `planetary-glyphs-${theme}.png`) });
     }
+  });
+
+  it('shrinks and reflects every planetary glyph consistently in inventory and occupied sockets', async () => {
+    const reverseAxes = { red: [-.9, -.9], green: [.9, -.9], blue: [-.9, .9] };
+    for (const ids of [[], ['u-r', 'u-g', 'u-b'], ['d-r', 'd-g', 'd-b'], ['au-r', 'au-g', 'au-b'], ['ad-r', 'ad-g', 'ad-b']]) {
+      await page.evaluate(ids => setRecipe(ids), ids);
+      const glyphs = await page.locator('#palette .piece .rune-glyph, #slots .socket.filled .rune-glyph').evaluateAll(nodes => nodes.map(node => {
+        const owner = node.closest('.piece, .socket');
+        const piece = byId[owner.dataset.id || owner.dataset.piece];
+        const matrix = node.transform.baseVal.consolidate().matrix;
+        const center = new DOMPoint(24, 25.5).matrixTransform(matrix);
+        const glyph = node.getBoundingClientRect();
+        const frame = owner.querySelector('.rune-frame').getBoundingClientRect();
+        const rawGlyph = node.getBBox();
+        const rawFrame = owner.querySelector('.rune-frame').getBBox();
+        return { id: piece.id, color: piece.color, anti: piece.anti, sx: matrix.a, sy: matrix.d,
+          center: [center.x, center.y], dashed: getComputedStyle(node).strokeDasharray,
+          widthScale: glyph.width / frame.width / (rawGlyph.width / rawFrame.width),
+          heightScale: glyph.height / frame.height / (rawGlyph.height / rawFrame.height),
+          x: (glyph.x + glyph.width / 2 - frame.x) / frame.width,
+          y: (glyph.y + glyph.height / 2 - frame.y) / frame.height };
+      }));
+      assert.equal(glyphs.length, 12 + ids.length);
+      for (const glyph of glyphs) {
+        const axes = glyph.anti ? reverseAxes[glyph.color] : [.9, .9];
+        assert.ok(Math.abs(glyph.sx - axes[0]) < .00001 && Math.abs(glyph.sy - axes[1]) < .00001, `${glyph.id}: correct reflection axes`);
+        assert.ok(Math.abs(glyph.center[0] - 24) < .00001 && Math.abs(glyph.center[1] - 26) < .00001, `${glyph.id}: fixed transform center`);
+        assert.equal(glyph.dashed, 'none');
+        assert.ok(Math.abs(glyph.widthScale - .9) < .001 && Math.abs(glyph.heightScale - .9) < .001, `${glyph.id}: 10 percent smaller inside the same frame`);
+        assert.ok(Math.abs(glyph.x - .5) < .01 && Math.abs(glyph.y - .5) < .01, `${glyph.id}: centered after reflection`);
+      }
+    }
+    await page.locator('#chamber').screenshot({ path: path.join(artifacts, 'reverse-planetary-glyphs.png') });
   });
 
   it('enlarges the field, stones, slots, and text together on a large screen', async () => {
