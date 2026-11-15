@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>История Триады · QCD</title>
+  <style>
+    :root { color-scheme: dark; --bg: #161514; --ink: #eae3d6; --muted: #a49b8e; --accent: #d5b987; --line: #39332b; --mono: "Cascadia Code", Consolas, monospace; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 "Segoe UI", system-ui, sans-serif; }
+    button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    button:disabled { opacity: .3; cursor: default; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { color: var(--accent); }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+    .page { max-width: 1920px; margin: 0 auto; padding: 36px 40px 28px; }
+    .masthead { display: flex; justify-content: space-between; align-items: center; gap: 28px; border-bottom: 1px solid var(--line); padding-bottom: 28px; }
+    .eyebrow { margin: 0; color: var(--muted); font: 10px/1.5 var(--mono); letter-spacing: .16em; text-transform: uppercase; }
+    h1 { font: normal clamp(28px, 3vw, 44px)/1.2 Georgia, serif; letter-spacing: -.025em; margin: 11px 0 8px; }
+    .intro { margin: 0; color: var(--muted); font-size: 13px; }
+    .current-link { border: 1px solid var(--line); padding: 11px 16px; border-radius: 3px; font-size: 12px; white-space: nowrap; }
+    .current-link span { margin-left: 14px; color: var(--accent); }
+    .layout { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: 34px; margin-top: 28px; align-items: start; }
+    .sidebar { padding-top: 9px; }
+    .step-list { list-style: none; margin: 22px 0 0; padding: 0; }
+    .step-list li { position: relative; }
+    .step-list li:not(:last-child)::after { content: ""; position: absolute; left: 15px; top: 46px; bottom: 0; width: 1px; background: var(--line); }
+    .step { display: grid; grid-template-columns: 32px 1fr; gap: 13px; width: 100%; padding: 13px 0 26px; border: 0; background: transparent; text-align: left; }
+    .step-number { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); font: 11px var(--mono); transition: color .15s, background .15s; }
+    .step-title { display: block; font-size: 13px; line-height: 1.45; margin: 2px 0 5px; }
+    .step-short { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .step[aria-current="step"] .step-number { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+    .step[aria-current="step"] .step-title { color: var(--accent); }
+    .step:hover .step-title { color: var(--accent); }
+    .archive-note { margin: 24px 0 0; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.8; }
+    .stage { min-width: 0; }
+    .stage-toolbar { display: flex; justify-content: space-between; gap: 18px; align-items: center; margin-bottom: 15px; min-height: 40px; }
+    .stage-heading { min-width: 0; }
+    h2 { font-size: 16px; font-weight: 500; line-height: 1.4; margin: 3px 0 0; }
+    .stage-actions { display: flex; align-items: center; flex-shrink: 0; gap: 20px; font-size: 11px; color: var(--muted); }
+    .paging { display: flex; gap: 6px; }
+    .paging button { border: 1px solid var(--line); border-radius: 3px; background: transparent; width: 36px; height: 34px; font-size: 16px; }
+    .paging button:not(:disabled):hover { color: var(--accent); border-color: var(--accent); }
+    .preview { width: 100%; aspect-ratio: 1440 / 1040; overflow: hidden; position: relative; border-radius: 4px; background: #100f10; box-shadow: 0 0 0 1px var(--line), 0 16px 50px #00000025; }
+    .preview iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 1040px; border: 0; transform: scale(var(--preview-scale, 1)); transform-origin: top left; background: #100f10; }
+    .notes { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 28px; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
+    .question { font: normal 21px/1.5 Georgia, serif; margin: 9px 0 0; }
+    .changes { margin: 10px 0 0; padding-left: 17px; font-size: 12px; color: var(--muted); }
+    .changes li { padding-left: 3px; margin-bottom: 7px; }
+    .changes li::marker { color: var(--accent); }
+    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 20px; color: var(--muted); font-size: 10px; }
+    .footer span:last-child { font-family: var(--mono); letter-spacing: .1em; }
+    @media (min-width: 1800px) { .layout { grid-template-columns: 260px minmax(0, 1fr); gap: 42px; } .step-title { font-size: 14px; } }
+    @media (max-width: 1000px) { .page { padding: 25px 24px; } .layout { grid-template-columns: 185px minmax(0, 1fr); gap: 22px; } .stage-actions { gap: 10px; } .notes { grid-template-columns: 1fr; gap: 20px; } }
+    @media (max-width: 720px) {
+      .page { padding: 22px 18px; }
+      .masthead { flex-direction: column; align-items: flex-start; gap: 18px; padding-bottom: 22px; }
+      .layout { display: block; margin-top: 20px; }
+      .sidebar { padding: 0; }
+      .step-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 12px 0 22px; }
+      .step-list li::after { display: none; }
+      .step { padding: 9px 0; gap: 9px; }
+      .step-title { font-size: 12px; }
+      .step-short { font-size: 10px; }
+      .archive-note { display: none; }
+      .stage-toolbar { flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+      .stage-actions { width: 100%; justify-content: space-between; }
+      .paging button { width: 44px; height: 40px; }
+      .stage-actions > a { padding: 8px 0; }
+      .notes { margin-top: 22px; padding-top: 18px; }
+      .question { font-size: 20px; }
+      .footer { flex-wrap: wrap; gap: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">QCD / История итераций</p>
+        <h1>Как менялась Триада</h1>
+        <p class="intro">От работающих правил к тому, что можно почувствовать без инструкции.</p>
+      </div>
+      <a class="current-link" href="../qcd_magic_prototype.html" target="_blank" rel="noopener">Рабочий прототип <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <p class="eyebrow">Ход мысли</p>
+        <nav aria-label="Этапы развития прототипа"><ol id="steps" class="step-list"></ol></nav>
+        <p class="archive-note">Не четыре разных проекта, а четыре ответа на следующий возникший вопрос.</p>
+      </aside>
+
+      <section class="stage" aria-labelledby="stageTitle">
+        <div class="stage-toolbar">
+          <div class="stage-heading"><p id="stepCounter" class="eyebrow" role="status" aria-live="polite"></p><h2 id="stageTitle">Отправная точка</h2></div>
+          <div class="stage-actions">
+            <a id="openVersion" href="00-original.html" target="_blank" rel="noopener">Открыть отдельно ↗</a>
+            <div class="paging" role="group" aria-label="Переключение этапов">
+              <button id="previous" type="button" aria-label="Предыдущий этап" disabled>←</button>
+              <button id="next" type="button" aria-label="Следующий этап">→</button>
+            </div>
+          </div>
+        </div>
+        <div id="preview" class="preview"><iframe id="prototype" name="prototype" src="00-original.html" title="Этап 1. Отправная точка"></iframe></div>
+        <div class="notes">
+          <section aria-labelledby="questionLabel"><h3 id="questionLabel" class="eyebrow">Вопрос этого шага</h3><p id="question" class="question"></p></section>
+          <section aria-labelledby="changesLabel"><h3 id="changesLabel" class="eyebrow">Что попробовали</h3><ul id="changes" class="changes"></ul></section>
+        </div>
+      </section>
+    </div>
+    <footer class="footer"><span>ТРИАДА / АРХИВ</span></footer>
+    <noscript><p>Для переключения этапов включи JavaScript. Прямые ссылки: <a href="00-original.html">исходник</a>, <a href="01-redesign.html">новая подача</a>, <a href="02-inventory.html">инвентарь</a>, <a href="03-circle.html">сборка на круге</a>.</p></noscript>
+  </main>
+  <script src="history-data.js"></script>
+  <script>
+    'use strict';
+    const versions = globalThis.QCD_HISTORY;
+    const $ = id => document.getElementById(id);
+    let active = -1;
+
+    versions.forEach((version, index) => {
+      const item = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'step';
+      button.dataset.version = version.id;
+      button.innerHTML = `<span class="step-number" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span><span><span class="step-title"></span><span class="step-short"></span></span>`;
+      button.querySelector('.step-title').textContent = version.title;
+      button.querySelector('.step-short').textContent = version.short;
+      button.addEventListener('click', () => { location.hash = version.id; });
+      item.append(button);
+      $('steps').append(item);
+    });
+
+    function showVersion() {
+      let index = versions.findIndex(version => version.id === location.hash.slice(1));
+      if (index < 0) {
+        index = 0;
+        history.replaceState(null, '', `#${versions[0].id}`);
+      }
+      if (active === index) return;
+      active = index;
+      const version = versions[index];
+      document.querySelectorAll('.step').forEach((button, i) => {
+        if (i === index) button.setAttribute('aria-current', 'step');
+        else button.removeAttribute('aria-current');
+      });
+      $('stepCounter').textContent = `Этап ${index + 1} из ${versions.length}`;
+      $('stageTitle').textContent = version.title;
+      $('question').textContent = version.question;
+      $('changes').replaceChildren(...version.changes.map(text => {
+        const item = document.createElement('li');
+        item.textContent = text;
+        return item;
+      }));
+      $('openVersion').href = version.file;
+      if ($('prototype').getAttribute('src') !== version.file) {
+        // A fresh frame avoids adding child navigations to the browser's Back history.
+        const frame = document.createElement('iframe');
+        frame.id = frame.name = 'prototype';
+        frame.src = version.file;
+        frame.title = `Этап ${index + 1}. ${version.title}`;
+        $('preview').replaceChildren(frame);
+      }
+      $('previous').disabled = index === 0;
+      $('next').disabled = index === versions.length - 1;
+      document.title = `${version.title} · История Триады`;
+    }
+
+    $('previous').addEventListener('click', () => { if (active > 0) location.hash = versions[active - 1].id; });
+    $('next').addEventListener('click', () => { if (active < versions.length - 1) location.hash = versions[active + 1].id; });
+    window.addEventListener('hashchange', showVersion);
+    // Equal desktop viewports let the archived compositions be compared without editing them.
+    new ResizeObserver(([entry]) => {
+      $('preview').style.setProperty('--preview-scale', String(entry.contentRect.width / 1440));
+    }).observe($('preview'));
+    showVersion();
+  </script>
+</body>
+</html>

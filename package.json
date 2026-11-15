@@ -1,0 +1,11 @@
+{
+  "name": "qcd-triad",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/prototype.test.mjs tests/history.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.65.1"
+  }
+}

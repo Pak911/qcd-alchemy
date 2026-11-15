@@ -1,0 +1,2 @@
+# Preserve historical snapshot bytes, including their original line endings.
+versions/*.html -text
