@@ -41,8 +41,8 @@ afterEach(async () => {
 });
 
 describe('Historical snapshots', () => {
-  it('lists six stages with concise descriptions', () => {
-    assert.equal(versions.length, 6);
+  it('lists seven stages with concise descriptions', () => {
+    assert.equal(versions.length, 7);
     for (const version of versions) {
       assert.ok(version.changes.length >= 2 && version.changes.length <= 4);
     }
@@ -117,6 +117,37 @@ describe('Historical snapshots', () => {
     await page.locator('.socket[data-piece="d-r"]').click();
     assert.equal(await page.locator('.capacity-dot:not(.spent)').count(), 3);
   });
+  it('retains localized feedback, distinct particle chords, and shared reservations', async () => {
+    await page.goto(pathToFileURL(path.join(archive, '06-feedback-and-localization.html')).href);
+    await page.locator('#languageSelect').selectOption('ru');
+    assert.equal(await page.locator('.stone-face, .rune-mark, .ability-size').count(), 0);
+    assert.equal(await page.locator('#languageSelect').evaluate(node => getComputedStyle(node).alignItems), 'center');
+    await page.locator('.piece[data-id="u-r"]').click();
+    assert.equal(await page.locator('#actionScale').getAttribute('data-ready'), 'false');
+    await page.locator('.piece[data-id="ad-r"]').hover();
+    assert.equal(await page.locator('#actionPreview').isVisible(), true);
+    await page.locator('.piece[data-id="ad-r"]').click();
+    assert.equal(await page.locator('#abilityName').textContent(), 'Малая печать отталкивания');
+    await page.locator('#bindSeal').click();
+    await page.evaluate(() => setRecipe(['d-r', 'u-g', 'd-b']));
+    await page.locator('[data-theme-choice="instrument"]').click();
+    await page.waitForFunction(() => audio?.context.state === 'running');
+    assert.equal(await page.locator('#stateName').textContent(), 'Барион');
+    for (const locale of ['en', 'es', 'pt', 'zh', 'ru']) {
+      await page.locator('#languageSelect').selectOption(locale);
+      assert.equal(await page.evaluate(() => language), locale);
+      assert.deepEqual(await page.evaluate(() => slots), ['d-r', 'u-g', 'd-b']);
+      assert.deepEqual(await page.evaluate(() => reservedIds()), ['u-r', 'ad-r']);
+      assert.equal(await page.evaluate(() => audio.stringKey), 'baryon:0');
+      assert.equal(await page.evaluate(() => audio.strings.size), 3);
+    }
+    await page.locator('#releaseAll').click();
+    assert.deepEqual(await page.evaluate(() => reservedIds()), []);
+    assert.deepEqual(await page.evaluate(() => slots), ['d-r', 'u-g', 'd-b']);
+    await page.locator('#reset').click();
+    assert.equal(await page.evaluate(() => audio.strings.size), 0);
+  });
+
   it('retains seal abilities, reserved ingredients, the named scale, and scientific states', async () => {
     await page.goto(pathToFileURL(path.join(archive, '05-seal-abilities.html')).href);
     assert.equal(await page.locator('h1').textContent(), 'Равновесие');
@@ -189,8 +220,14 @@ describe('History viewer', () => {
     assert.equal(await page.locator('#prototype').getAttribute('src'), '04-direct-selection.html');
     await page.locator('#next').click();
     await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'seal-abilities');
-    assert.equal(await page.locator('#next').isDisabled(), true);
+    assert.equal(await page.locator('#next').isDisabled(), false);
     assert.equal(await page.locator('#prototype').getAttribute('src'), '05-seal-abilities.html');
+    await page.locator('#next').click();
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'feedback-and-localization');
+    assert.equal(await page.locator('#next').isDisabled(), true);
+    assert.equal(await page.locator('#prototype').getAttribute('src'), '06-feedback-and-localization.html');
+    await page.locator('#previous').click();
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'seal-abilities');
     await page.locator('#previous').click();
     await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'direct-selection');
     await page.locator('#previous').click();
@@ -203,9 +240,9 @@ describe('History viewer', () => {
   });
 
   it('keeps the complete desktop composition visible in responsive overview frames', async () => {
-    await page.goto(`${historyURL}#seal-abilities`);
+    await page.goto(`${historyURL}#feedback-and-localization`);
     const frame = page.frame({ name: 'prototype' });
-    await frame.waitForURL(pathToFileURL(path.join(archive, '05-seal-abilities.html')).href);
+    await frame.waitForURL(pathToFileURL(path.join(archive, '06-feedback-and-localization.html')).href);
     for (const width of [320, 390, 768, 1440, 1920, 2560]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.waitForFunction(() => {
@@ -228,15 +265,16 @@ describe('History viewer', () => {
   });
 
   it('opens snapshots at full size and keeps the working prototype a separate link', async () => {
-    await page.goto(`${historyURL}#seal-abilities`);
-    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'seal-abilities');
+    await page.goto(`${historyURL}#feedback-and-localization`);
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'feedback-and-localization');
     const opened = page.waitForEvent('popup');
     await page.locator('#openVersion').click();
     const snapshot = await opened;
     await snapshot.waitForLoadState();
-    assert.equal(snapshot.url(), pathToFileURL(path.join(archive, '05-seal-abilities.html')).href);
+    assert.equal(snapshot.url(), pathToFileURL(path.join(archive, '06-feedback-and-localization.html')).href);
     assert.equal(await snapshot.locator('.orbit-slot').count(), 6);
     assert.equal(await snapshot.locator('.ability-slot').count(), 6);
+    assert.equal(await snapshot.locator('#languageSelect option').count(), 6);
     const working = page.waitForEvent('popup');
     await page.locator('.current-link').click();
     const prototype = await working;

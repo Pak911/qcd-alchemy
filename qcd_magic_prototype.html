@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ru" data-theme="artifact">
+<html lang="en" data-theme="artifact">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Равновесие · QCD</title>
+  <title>QCD</title>
   <style>
     :root {
       color-scheme: dark;
@@ -58,7 +58,7 @@
     }
     button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     button, summary { touch-action: manipulation; }
-    button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+    button:focus-visible, summary:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
     button:disabled { cursor: default; }
     button svg { pointer-events: none; }
     svg { display: block; }
@@ -68,7 +68,21 @@
     .brand { display: flex; align-items: center; gap: 16px; }
     .brand-mark { width: 38px; height: 44px; color: var(--accent); }
     h1 { font: normal 36px/1 var(--heading); letter-spacing: .025em; margin: 0 0 8px; }
-    .header-controls { display: flex; align-items: center; gap: 22px; }
+    .header-controls { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 12px 22px; }
+    .utility-controls { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+    .language-select { max-width: 160px; min-height: 38px; border: 1px solid var(--line); border-radius: 3px; padding: 6px 8px; background: var(--surface); color: var(--muted); font: inherit; font-size: 12px; }
+    .language-select:focus { outline: none; }
+    .language-select:focus-visible { text-decoration: underline; text-underline-offset: 4px; }
+    @supports (appearance: base-select) {
+      .language-select, .language-select::picker(select) { appearance: base-select; }
+      .language-select { cursor: pointer; gap: 12px; align-items: center; }
+      .language-select::picker-icon { color: var(--muted); }
+      .language-select::picker(select) { min-width: 144px; padding: 4px; margin-block-start: 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink); box-shadow: 0 12px 28px #0008; }
+      .language-select option { min-height: 36px; padding: 8px 12px; border: 0; border-radius: 2px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
+      .language-select option:checked { background: rgba(var(--accent-rgb), .08); color: var(--accent); }
+      .language-select option:hover, .language-select option:focus { outline: none; background: rgba(var(--accent-rgb), .16); color: var(--accent); }
+      .language-select option::checkmark { color: var(--accent); }
+    }
     .theme-switch { display: flex; padding: 4px; border: 1px solid var(--line); border-radius: 5px; }
     .theme-switch button { border: 0; border-radius: 2px; background: transparent; padding: 8px 14px; color: var(--muted); font-size: 12px; }
     .theme-switch button[aria-pressed="true"] { color: var(--ink); background: rgba(var(--accent-rgb), .1); box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .12); }
@@ -86,7 +100,8 @@
     .family { padding: 10px 0 12px; border-bottom: 1px solid var(--line); }
     .family:last-child { border-bottom: 0; }
     .family-head { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
-    .family-head span:first-child { font: 10px var(--mono); color: var(--piece-color); }
+    .family-head .instrument-only { font: 10px var(--mono); color: var(--piece-color); }
+    .family-symbol { width: 16px; height: 16px; fill: none; stroke: var(--piece-color); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
     .family-line { height: 1px; flex: 1; background: linear-gradient(90deg, var(--piece-color), transparent); opacity: .25; }
     .family-pieces { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
     .inventory-cell { position: relative; min-width: 0; }
@@ -105,11 +120,9 @@
     .rune { width: 48px; max-width: 100%; height: 58px; color: var(--piece-color); overflow: visible; }
     .rune-frame { fill: var(--stone-face); stroke: currentColor; stroke-width: .65; stroke-opacity: .45; }
     .magnitude-1 .rune-frame { stroke-opacity: .55; }
-    .stone-face { fill: none; stroke: currentColor; stroke-width: .5; stroke-opacity: .25; }
     .rune-glyph { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
     .quark-glyph { fill: currentColor; stroke: none; font: italic 26px Georgia, serif; text-anchor: middle; }
     .rune-reverse .rune-glyph { stroke-dasharray: 3 3; }
-    .rune-mark { fill: currentColor; }
     .rune-forward .rune-glyph { filter: drop-shadow(0 0 3px currentColor); }
     .stone-flight { position: fixed; pointer-events: none; z-index: 20; transform-origin: top left; }
     .stone-flight .rune { width: 100%; height: 100%; }
@@ -174,7 +187,8 @@
     .alchemy-seal { opacity: .15; transition: opacity .5s; pointer-events: none; }
     .alchemy-seal .seal-icon { width: 100px; height: 100px; }
     [data-theme="artifact"] .chamber[data-state="balanced"] .alchemy-seal { opacity: 1; }
-    [data-theme="artifact"] .chamber[data-state="balanced"] #focus { opacity: .12; }
+    [data-theme="artifact"] .chamber[data-state="balanced"] #focus,
+    [data-theme="artifact"] .chamber[data-state="balanced"] .center-target { opacity: 0; }
     [data-theme="artifact"] .chamber.arrived .alchemy-seal .seal-icon { animation: seal-imprint .7s ease-out both; transform-origin: 50px 50px; }
     @keyframes seal-imprint { from { opacity: .1; transform: scale(1.3) rotate(-12deg); filter: blur(2px); } to { opacity: 1; transform: scale(1) rotate(0); filter: blur(0); } }
     .slots { position: absolute; inset: 0; pointer-events: none; }
@@ -212,18 +226,17 @@
     .bind-space { min-height: 52px; padding-top: 12px; }
     .bind-seal { border: 1px solid var(--accent); border-radius: 3px; padding: 9px 20px; background: rgba(var(--accent-rgb), .08); color: var(--accent); font-size: 12px; }
     .bind-seal:hover { background: rgba(var(--accent-rgb), .16); }
-    .abilities { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
-    .ability-bar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; list-style: none; padding: 0; margin: 16px 0 0; }
-    .ability-slot { position: relative; min-width: 0; min-height: 146px; border: 1px solid var(--line); border-radius: 4px; background: #00000018; }
+    .abilities { max-width: 808px; margin: 24px auto 0; padding-top: 20px; border-top: 1px solid var(--line); }
+    .ability-bar { display: grid; grid-template-columns: repeat(6, minmax(0, 128px)); gap: 8px; list-style: none; padding: 0; margin: 12px 0 0; }
+    .ability-slot { position: relative; min-width: 0; min-height: 112px; border: 1px solid var(--line); border-radius: 4px; background: #00000018; }
     .ability-slot.empty { display: grid; place-items: center; border-style: dashed; color: var(--faint); font: 11px var(--mono); }
-    .ability-card { display: flex; flex-direction: column; align-items: center; width: 100%; min-height: 146px; padding: 12px 8px; border: 0; border-radius: 4px; background: transparent; text-align: center; cursor: help; }
+    .ability-card { display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; min-height: 110px; padding: 6px 8px; border: 0; border-radius: 4px; background: transparent; text-align: center; cursor: help; }
     .ability-card:hover, .ability-card:focus-visible { background: rgba(var(--accent-rgb), .04); }
     .ability-card .seal-icon { width: 72px; height: 72px; flex-shrink: 0; }
-    .ability-label { margin-top: 8px; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
-    .ability-size { margin-top: 4px; font: 9px var(--mono); color: var(--muted); }
+    .ability-label { margin-top: 2px; max-width: 100%; font-size: 12px; line-height: 1.25; overflow-wrap: anywhere; }
     .ability-remove { position: absolute; top: 0; right: 0; width: 32px; height: 32px; border: 0; background: transparent; color: var(--muted); font-size: 19px; }
     .ability-remove:hover { color: var(--ink); }
-    .ability-note { color: var(--muted); font-size: 11px; margin: 12px 0 0; }
+    .release-all { margin-top: 12px; min-height: 44px; padding-left: 0; }
     .seal-icon { display: block; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; color: var(--accent); }
     .seal-icon .seal-rim { stroke-width: .8; opacity: .6; }
     .ability-preview { width: 88px; height: 88px; margin: 12px 0 8px; }
@@ -244,6 +257,12 @@
     .action-fill { position: absolute; width: 1px; background: var(--accent); transition: top .3s, height .3s; }
     .action-marker { position: absolute; left: -3px; width: 7px; height: 7px; border: 1px solid var(--accent); background: var(--surface); transform: translateY(-50%) rotate(45deg); transition: top .3s; }
     .action-scale[data-ready="true"] .action-marker { background: var(--accent); box-shadow: 0 0 9px rgba(var(--accent-rgb), .4); }
+    .action-scale[data-ready="false"] .action-fill, .action-scale[data-ready="false"] .action-marker { background: var(--red); }
+    .action-scale[data-ready="false"] .action-marker { border-color: var(--red); }
+    .scale-preview { position: absolute; width: 7px; height: 7px; border: 1px dashed var(--accent); background: transparent; pointer-events: none; }
+    .action-axis .scale-preview { left: -3px; transform: translateY(-50%) rotate(45deg); }
+    .action-axis .scale-preview[data-ready="false"] { border-color: var(--red); }
+    .charge-scale .scale-preview { top: 4px; transform: translateX(-50%) rotate(45deg); }
     .action-steps { margin: 0; padding: 0; list-style: none; }
     .action-step { position: relative; display: flex; align-items: center; min-height: 34px; padding-left: 52px; color: var(--muted); font-size: 12px; }
     .action-step::before { content: ""; position: absolute; left: 31px; width: 7px; height: 1px; background: var(--line); }
@@ -291,6 +310,8 @@
     [data-theme="instrument"] .strand-glow { stroke-width: 8; opacity: .15; }
     [data-theme="instrument"] .orbit { animation: none !important; }
     [data-theme="artifact"] .balance-tracks, [data-theme="artifact"] .balance-extents { display: none; }
+    [data-theme="artifact"] .palette-labels { display: none; }
+    [data-theme="artifact"] .palette { margin-top: 21px; }
     @keyframes orbit-turn { to { transform: rotate(360deg); } }
     @keyframes release { 0% { opacity: .7; transform: scale(.35); } 100% { opacity: 0; transform: scale(1.5); } }
     @media (max-width: 1180px) {
@@ -313,9 +334,10 @@
       .library-note { margin-bottom: 16px; }
     }
     @media (max-width: 680px) {
-      .ability-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-      .ability-card, .ability-slot { min-height: 150px; }
-      .ability-card { padding: 16px 5px 10px; }
+      .abilities { max-width: 400px; }
+      .ability-bar { grid-template-columns: repeat(3, minmax(0, 128px)); }
+      .ability-slot { min-height: 104px; }
+      .ability-card { min-height: 102px; padding: 6px 5px; }
       .ability-card .seal-icon { width: 62px; height: 62px; }
       .ability-label { font-size: 11px; }
       .ability-remove { width: 40px; height: 40px; }
@@ -382,47 +404,57 @@
           <circle cx="20" cy="23" r="5" fill="none" stroke="currentColor"/>
           <circle cx="20" cy="23" r="1.5" fill="currentColor"/>
         </svg>
-        <div><h1>Равновесие</h1></div>
+        <div><h1></h1></div>
       </div>
       <div class="header-controls">
-        <div class="theme-switch" role="group" aria-label="Визуальная подача">
-          <button type="button" data-theme-choice="artifact" aria-pressed="true">Алхимия</button>
-          <button type="button" data-theme-choice="instrument" aria-pressed="false">Кварковая модель</button>
+        <div class="theme-switch" role="group" data-i18n-aria="theme.label">
+          <button type="button" data-theme-choice="artifact" data-i18n="theme.artifact" aria-pressed="true"></button>
+          <button type="button" data-theme-choice="instrument" data-i18n="theme.instrument" aria-pressed="false"></button>
         </div>
-        <button id="toggleSound" class="sound-button" type="button" aria-pressed="true" aria-label="Звук включён. Выключить звук">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M4 9H8L13 5V19L8 15H4Z"/><path class="sound-wave" d="M16 8Q20 12 16 16M19 5Q25 12 19 19"/></svg>
-          <span id="soundLabel">Звук вкл</span>
-        </button>
+        <div class="utility-controls">
+          <button id="toggleSound" class="sound-button" type="button" aria-pressed="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M4 9H8L13 5V19L8 15H4Z"/><path class="sound-wave" d="M16 8Q20 12 16 16M19 5Q25 12 19 19"/></svg>
+            <span id="soundLabel"></span>
+          </button>
+          <select id="languageSelect" class="language-select" data-i18n-aria="language.label">
+            <option value="auto">Auto</option>
+            <option value="en" lang="en">English</option>
+            <option value="es" lang="es">Español</option>
+            <option value="pt" lang="pt-BR">Português</option>
+            <option value="zh" lang="zh-Hans">简体中文</option>
+            <option value="ru" lang="ru">Русский</option>
+          </select>
+        </div>
       </div>
     </header>
 
     <div class="workbench">
       <section class="library" aria-labelledby="libraryTitle">
-        <div class="section-head"><h2 id="libraryTitle" class="eyebrow">Инвентарь</h2><span id="inventoryCount" class="inventory-count" aria-label="Камней в инвентаре: 12 из 12">12 / 12</span></div>
-        <div class="palette-labels" aria-hidden="true"><span id="forwardLabel">Прямые</span><span id="reverseLabel">Обратные</span></div>
+        <div class="section-head"><h2 id="libraryTitle" class="eyebrow"></h2><span id="inventoryCount" class="inventory-count">12 / 12</span></div>
+        <div class="palette-labels" aria-hidden="true"><span id="forwardLabel"></span><span id="reverseLabel"></span></div>
         <div id="palette" class="palette"></div>
-        <p id="libraryNote" class="library-note">Коснись камня, чтобы поместить в слот.</p>
+        <p id="libraryNote" class="library-note"></p>
         <div class="examples">
-          <p class="eyebrow">Сочетания <svg class="dice" viewBox="0 0 20 20" aria-hidden="true"><use href="#diceIcon"/></svg></p>
+          <p class="eyebrow"><span data-i18n="examples.heading"></span> <svg class="dice" viewBox="0 0 20 20" aria-hidden="true"><use href="#diceIcon"/></svg></p>
           <div class="example-buttons">
-            <button id="next2" type="button" class="example-button" aria-label="Собрать случайную пару"><span>Пара</span><svg class="dice" viewBox="0 0 20 20" aria-hidden="true"><use href="#diceIcon"/></svg></button>
-            <button id="next3" type="button" class="example-button" aria-label="Собрать случайную тройку"><span>Тройка</span><svg class="dice" viewBox="0 0 20 20" aria-hidden="true"><use href="#diceIcon"/></svg></button>
+            <button id="next2" type="button" class="example-button" data-i18n-aria="examples.pairLabel"><span data-i18n="examples.pair"></span><svg class="dice" viewBox="0 0 20 20" aria-hidden="true"><use href="#diceIcon"/></svg></button>
+            <button id="next3" type="button" class="example-button" data-i18n-aria="examples.tripleLabel"><span data-i18n="examples.triple"></span><svg class="dice" viewBox="0 0 20 20" aria-hidden="true"><use href="#diceIcon"/></svg></button>
           </div>
           <p id="cycleNote" class="cycle-note"></p>
         </div>
       </section>
 
-      <section id="chamber" class="chamber" data-state="empty" aria-label="Поле взаимодействия">
-        <div class="chamber-heading"><p class="eyebrow" id="fieldLabel">Алхимический круг</p></div>
-        <div id="capacity" class="capacity" role="img" aria-label="Свободно мест: 3 из 3" title="Свободно мест: 3 из 3">
+      <section id="chamber" class="chamber" data-state="empty">
+        <div class="chamber-heading"><p class="eyebrow" id="fieldLabel"></p></div>
+        <div id="capacity" class="capacity" role="img">
           <span class="capacity-dot" aria-hidden="true"></span>
           <span class="capacity-dot" aria-hidden="true"></span>
           <span class="capacity-dot" aria-hidden="true"></span>
         </div>
         <div class="field-wrap">
           <svg id="field" class="field" viewBox="0 0 640 600" role="img" aria-labelledby="fieldTitle fieldDescription">
-            <title id="fieldTitle">Баланс трёх символов и их противоположностей</title>
-            <desc id="fieldDescription">Знаков нет. Фокус в центре.</desc>
+            <title id="fieldTitle"></title>
+            <desc id="fieldDescription"></desc>
             <defs>
               <radialGradient id="focusLight"><stop stop-color="var(--accent)" stop-opacity=".25"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></radialGradient>
               <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="3"/></filter>
@@ -439,7 +471,7 @@
               <path class="guide" d="M320 90V498M143.33 192 496.67 396M143.33 396 496.67 192"/>
               <path class="triangle" d="M320 136 183.17 373 456.83 373Z"/>
               <path class="triangle triangle-inverse" d="M320 452 183.17 215 456.83 215Z"/>
-              <g class="instrument-only"><text class="instrument-label" x="77" y="565">COLOR SPACE</text><text class="instrument-label" x="492" y="565">Σ → 0</text></g>
+              <g class="instrument-only"><text class="instrument-label" x="77" y="565" data-i18n="field.colorSpace"></text><text class="instrument-label" x="492" y="565">Σ → 0</text></g>
               <g id="strands"></g>
               <g id="resultSeal" class="result-seal instrument-only"></g>
               <circle class="target-light" cx="320" cy="294" r="50"/>
@@ -450,63 +482,1028 @@
               <g id="alchemySeal" class="alchemy-seal artifact-only" transform="translate(270 244)"></g>
             </g>
           </svg>
-          <div id="slots" class="slots" role="group" aria-label="Камни на круге, не больше трёх одновременно"></div>
+          <div id="slots" class="slots" role="group"></div>
         </div>
         <div class="field-status" role="status" aria-live="polite" aria-atomic="true">
-          <h2 id="resultTitle" class="result-title">Всё начинается с касания</h2>
-          <p id="resultDetail" class="result-detail">Выбери любое начертание</p>
+          <h2 id="resultTitle" class="result-title"></h2>
+          <p id="resultDetail" class="result-detail"></p>
         </div>
-        <div class="assembly-controls"><span id="slotCount">0 / 3 камня</span><button id="reset" class="reset" type="button" disabled>Очистить ↺</button></div>
-        <div class="bind-space"><button id="bindSeal" class="bind-seal" type="button" hidden>Закрепить печать</button></div>
+        <div class="assembly-controls"><span id="slotCount"></span><button id="reset" class="reset" data-i18n="reset" type="button" disabled></button></div>
+        <div class="bind-space"><button id="bindSeal" class="bind-seal" type="button" hidden></button></div>
       </section>
 
-      <aside id="readout" class="readout" data-balanced="false" aria-label="Показания">
+      <aside id="readout" class="readout" data-balanced="false" data-i18n-aria="readout.label">
         <section class="instrument-only" aria-labelledby="chargeTitle">
-          <h2 id="chargeTitle" class="eyebrow">Электрический заряд</h2>
+          <h2 id="stateName" class="ability-name" hidden></h2>
+          <h2 id="chargeTitle" class="eyebrow" data-i18n="charge.heading"></h2>
           <div class="charge-value"><span id="chargeValue">0</span><span class="charge-unit">e</span></div>
-          <div class="charge-scale" aria-hidden="true"><div class="charge-rail"></div><div id="chargeFill" class="charge-fill"></div><div id="ticks"></div><div id="chargeMarker" class="charge-marker"></div></div>
+          <div class="charge-scale" aria-hidden="true"><div class="charge-rail"></div><div id="chargeFill" class="charge-fill"></div><div id="ticks"></div><div id="chargeMarker" class="charge-marker"></div><div id="chargePreview" class="scale-preview" hidden></div></div>
         </section>
         <section class="artifact-only" aria-labelledby="abilityHeading">
-          <h2 id="abilityHeading" class="eyebrow">Результат</h2>
+          <h2 id="abilityHeading" class="eyebrow" data-i18n="ability.heading"></h2>
           <div id="abilityPreview" class="ability-preview" aria-hidden="true"></div>
-          <h3 id="abilityName" class="ability-name">Печать не собрана</h3>
-          <p id="abilityDetail" class="ability-detail">Приведи знаки в равновесие.</p>
-          <p class="action-direction">К себе</p>
+          <h3 id="abilityName" class="ability-name"></h3>
+          <p id="abilityDetail" class="ability-detail"></p>
+          <p class="action-direction" data-i18n="direction.inward"></p>
           <div id="actionScale" class="action-scale" data-ready="false">
-            <ol id="actionSteps" class="action-steps" aria-label="Шкала действий"></ol>
-            <div class="action-axis" aria-hidden="true"><div id="actionFill" class="action-fill" hidden></div><div id="actionMarker" class="action-marker" hidden></div></div>
+            <ol id="actionSteps" class="action-steps" data-i18n-aria="action.scale"></ol>
+            <div class="action-axis" aria-hidden="true"><div id="actionFill" class="action-fill" hidden></div><div id="actionMarker" class="action-marker" hidden></div><div id="actionPreview" class="scale-preview" hidden></div></div>
           </div>
-          <p class="action-direction">От себя</p>
+          <p class="action-direction" data-i18n="direction.outward"></p>
         </section>
         <div class="readout-line instrument-only"></div>
         <section class="instrument-only" aria-labelledby="balanceTitle">
-          <h2 id="balanceTitle" class="eyebrow">Цветовой баланс</h2>
-          <div class="balance-value"><span class="balance-indicator" aria-hidden="true"></span><span id="balanceValue">Нет кварков</span></div>
+          <h2 id="balanceTitle" class="eyebrow" data-i18n="balance.heading"></h2>
+          <div class="balance-value"><span class="balance-indicator" aria-hidden="true"></span><span id="balanceValue"></span></div>
           <div id="balanceTracks" class="balance-tracks" aria-hidden="true"></div>
-          <div class="balance-extents" aria-hidden="true"><span>антицвет</span><span>цвет</span></div>
+          <div class="balance-extents" aria-hidden="true"><span data-i18n="balance.anticolor"></span><span data-i18n="balance.color"></span></div>
         </section>
       </aside>
     </div>
 
     <section class="abilities" aria-labelledby="abilitiesTitle">
-      <div class="section-head"><h2 id="abilitiesTitle" class="eyebrow">Панель способностей</h2><span id="abilityCount" class="inventory-count">0 / 6</span></div>
+      <div class="section-head"><h2 id="abilitiesTitle" class="eyebrow"></h2><span id="abilityCount" class="inventory-count">0 / 6</span></div>
       <ol id="abilityBar" class="ability-bar"></ol>
-      <p id="abilityNote" class="ability-note">Закрепи готовую печать. Её руны останутся заняты до разбора.</p>
+      <button id="releaseAll" class="reset release-all" type="button" disabled></button>
     </section>
     <footer class="bottom-bar">
       <details class="science">
-        <summary id="scienceSummary">Что скрыто внутри</summary>
+        <summary id="scienceSummary"></summary>
         <div class="science-content">
-          <p id="physicalResult" class="science-result">За начертаниями скрываются кварки и антикварки.</p>
-          <p>Три семейства обозначают цветовые заряды, противоположные направления соответствуют цвету и антицвету. В «Схеме» используются обозначения u, d и антикварков с чертой сверху. Размер значка показывает модуль электрического заряда, не массу и не физический размер кварка.</p>
-          <p>Пара «цвет + антицвет» и тройка разных цветов дают здесь замкнутую связь. Это наглядная модель правил сочетания, вдохновлённая квантовой хромодинамикой, а не её симуляция. Центр диаграммы иллюстрирует компенсацию; квантовые состояния, спин и динамика сильного взаимодействия не моделируются.</p>
+          <p id="physicalResult" class="science-result"></p>
+          <p data-i18n="science.symbols"></p>
+          <p data-i18n="science.model"></p>
         </div>
       </details>
-      <p class="colophon">QCD / ИНТЕРАКТИВНЫЙ ЭТЮД<br><span id="editionLabel">01 · АЛХИМИЯ</span></p>
+      <p class="colophon">QCD / <span id="editionLabel"></span></p>
     </footer>
     <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
   </main>
   <div id="runeTooltip" class="rune-tooltip" role="tooltip" hidden></div>
+  <script id="translationDictionary">
+    // BEGIN TRANSLATIONS
+    const translations = { ru: {
+      "app.artifact": "Равновесие",
+      "app.instrument": "Цветовой баланс",
+      "theme.label": "Визуальная подача",
+      "theme.artifact": "Алхимия",
+      "theme.instrument": "Кварковая модель",
+      "language.label": "Язык",
+      "sound.on": "Звук вкл",
+      "sound.off": "Звук выкл",
+      "sound.onLabel": "Звук включён. Выключить звук",
+      "sound.offLabel": "Звук выключен. Включить звук",
+      "library.artifact": "Инвентарь",
+      "library.instrument": "Кварки и антикварки",
+      "forward.artifact": "Прямые",
+      "forward.instrument": "Кварки",
+      "reverse.artifact": "Обратные",
+      "reverse.instrument": "Антикварки",
+      "libraryNote.artifact": "Нажми на камень, чтобы добавить его в круг.",
+      "libraryNote.instrument": "Выбери компонент для текущего состава.",
+      "examples.heading": "Сочетания",
+      "examples.pair": "Пара",
+      "examples.triple": "Тройка",
+      "examples.pairLabel": "Собрать случайную пару",
+      "examples.tripleLabel": "Собрать случайную тройку",
+      "examples.randomPair": "Случайная пара",
+      "examples.randomTriple": "Случайная тройка",
+      "examples.randomComposition": "Случайный состав: {count} компонента",
+      "field.artifact": "Алхимический круг",
+      "field.instrument": "Цветовая диаграмма",
+      "fieldTitle.artifact": "Баланс трёх символов и их противоположностей",
+      "fieldTitle.instrument": "Диаграмма цветовых зарядов",
+      "field.colorSpace": "ЦВЕТОВОЕ ПРОСТРАНСТВО",
+      "slots.artifact": "Камни на круге, не больше трёх одновременно",
+      "slots.instrument": "Текущий состав: до трёх кварков или антикварков",
+      "slots.count.artifact": "{count} / 3 камня",
+      "slots.count.instrument": "Компоненты: {count} / 3",
+      "slots.capacity": "Свободно мест: {free} из {total}",
+      "inventory.artifact": "Свободных камней: {free} из {total}. Закреплено: {reserved}.",
+      "inventory.instrument": "Доступных кварков и антикварков: {free} из {total}. Закреплено: {reserved}.",
+      "reset": "Очистить ↺",
+      "bind.artifact": "Закрепить печать",
+      "bind.instrument": "Сохранить сочетание",
+      "readout.label": "Показания",
+      "charge.heading": "Электрический заряд",
+      "ability.heading": "Результат",
+      "ability.empty": "Печать не собрана",
+      "ability.hint": "Приведи знаки в равновесие.",
+      "direction.inward": "К себе",
+      "direction.outward": "От себя",
+      "action.scale": "Шкала действий",
+      "balance.heading": "Цветовой баланс",
+      "balance.empty": "Нет кварков",
+      "balance.ready": "Скомпенсирован",
+      "balance.seeking": "Не скомпенсирован",
+      "balance.anticolor": "антицвет",
+      "balance.color": "цвет",
+      "abilities.artifact": "Панель способностей",
+      "abilities.instrument": "Частицы",
+      "releaseAll.artifact": "Разобрать все способности",
+      "releaseAll.instrument": "Разобрать все частицы",
+      "ability.freeSlot": "Свободное место {index}",
+      "ability.inspect": "{name}. Показать состав",
+      "ability.release": "Разобрать: {name}",
+      "ability.saved": "Сохранено: {name}. Компоненты закреплены.",
+      "ability.returned.artifact": "Возвращено камней: {count}.",
+      "ability.returned.instrument": "Возвращено компонентов: {count}.",
+      "scienceSummary.artifact": "Что скрыто внутри",
+      "scienceSummary.instrument": "О кварковой модели",
+      "science.intro": "За начертаниями скрываются кварки и антикварки.",
+      "science.symbols": "Три семейства обозначают цветовые заряды, противоположные направления соответствуют цвету и антицвету. В кварковой модели используются обозначения u, d и антикварков с чертой сверху. Размер значка показывает модуль электрического заряда, не массу и не физический размер кварка.",
+      "science.model": "Пара «цвет + соответствующий антицвет» или тройка разных цветов либо разных антицветов дают здесь замкнутую связь. Это наглядная модель правил сочетания, вдохновлённая квантовой хромодинамикой, а не её симуляция. Центр диаграммы иллюстрирует компенсацию; квантовые состояния, спин и динамика сильного взаимодействия не моделируются.",
+      "science.result": "{kind}. Аналог по кварковому составу: {analog}. Электрический заряд: {charge} e. Масса и спин здесь не определяются.",
+      "science.seeking": "Цветовые заряды ещё не скомпенсированы. Замкнутая пара соответствует мезону, тройка — бариону или антибариону.",
+      "edition.artifact": "01 · АЛХИМИЯ",
+      "edition.instrument": "02 · КВАРКОВАЯ МОДЕЛЬ",
+      "action.compression.name": "Сжатие",
+      "action.compression.genitive": "сжатия",
+      "action.compression.detail": "Спрессовывает вещество в плотный сгусток.",
+      "action.compression.seal": "Печать сжатия",
+      "action.compression.full": "Большая печать сжатия",
+      "action.attraction.name": "Притяжение",
+      "action.attraction.genitive": "притяжения",
+      "action.attraction.detail": "Резко тянет выбранный предмет к тебе.",
+      "action.attraction.smallDetail": "Слабо притягивает выбранный предмет к тебе.",
+      "action.attraction.smallName": "Малое притяжение",
+      "action.attraction.seal": "Печать притяжения",
+      "action.attraction.smallSeal": "Малая печать притяжения",
+      "action.attraction.full": "Большая печать притяжения",
+      "action.holding.name": "Удержание",
+      "action.holding.genitive": "удержания",
+      "action.holding.detail": "Обездвиживает выбранный предмет, фиксируя его на месте.",
+      "action.holding.smallDetail": "Сдерживает движение выбранного предмета.",
+      "action.holding.smallName": "Малое удержание",
+      "action.holding.seal": "Печать удержания",
+      "action.holding.smallSeal": "Малая печать удержания",
+      "action.holding.full": "Большая печать удержания",
+      "action.repulsion.name": "Отталкивание",
+      "action.repulsion.genitive": "отталкивания",
+      "action.repulsion.detail": "Отбрасывает выбранный предмет от тебя.",
+      "action.repulsion.smallDetail": "Слабо отталкивает выбранный предмет от тебя.",
+      "action.repulsion.smallName": "Малое отталкивание",
+      "action.repulsion.seal": "Печать отталкивания",
+      "action.repulsion.smallSeal": "Малая печать отталкивания",
+      "action.repulsion.full": "Большая печать отталкивания",
+      "action.dispersion.name": "Рассеивание",
+      "action.dispersion.genitive": "рассеивания",
+      "action.dispersion.detail": "Разрушает цельную форму предмета, рассеивая его вещество вокруг.",
+      "action.dispersion.seal": "Печать рассеивания",
+      "action.dispersion.full": "Большая печать рассеивания",
+      "kind.meson": "Мезон",
+      "kind.baryon": "Барион",
+      "kind.antibaryon": "Антибарион",
+      "particle.neutralPion": "нейтральный пион π⁰ (компонент)",
+      "particle.neutralRho": "нейтральный ρ-мезон ρ⁰ (компонент)",
+      "particle.pion": "пион π{sign}",
+      "particle.rho": "ρ-мезон ρ{sign}",
+      "particle.neutralNote": "Пары uū и dd̄ входят в суперпозиции. Отдельная пара не определяет нейтральный мезон.",
+      "particle.antiDeltaMinus": "античастица Δ⁻, заряд +1 e",
+      "particle.antineutron": "антинейтрон",
+      "particle.antiDeltaZero": "античастица Δ⁰, заряд 0 e",
+      "particle.antiproton": "антипротон",
+      "particle.antiDeltaPlus": "античастица Δ⁺, заряд −1 e",
+      "particle.antiDeltaPlusPlus": "античастица Δ⁺⁺, заряд −2 e",
+      "particle.neutron": "нейтрон",
+      "particle.proton": "протон",
+      "color.red": "красный",
+      "color.green": "зелёный",
+      "color.blue": "синий",
+      "family.red": "пси",
+      "family.green": "молния",
+      "family.blue": "эфира",
+      "sign.red.forward": "Прямой знак пси",
+      "sign.red.reverse": "Обратный знак пси",
+      "sign.green.forward": "Прямой знак молнии",
+      "sign.green.reverse": "Обратный знак молнии",
+      "sign.blue.forward": "Прямой знак эфира",
+      "sign.blue.reverse": "Обратный знак эфира",
+      "piece.artifact.inward": "{sign}. К себе: {magnitude}/3",
+      "piece.artifact.outward": "{sign}. От себя: {magnitude}/3",
+      "piece.red.quark": "Красный {flavor}-кварк, заряд {charge} e",
+      "piece.red.antiquark": "Антикрасный {flavor}-антикварк, заряд {charge} e",
+      "piece.green.quark": "Зелёный {flavor}-кварк, заряд {charge} e",
+      "piece.green.antiquark": "Антизелёный {flavor}-антикварк, заряд {charge} e",
+      "piece.blue.quark": "Синий {flavor}-кварк, заряд {charge} e",
+      "piece.blue.antiquark": "Антисиний {flavor}-антикварк, заряд {charge} e",
+      "rune.large": "Большой камень {symbol}\n{name}",
+      "rune.small": "Малый камень {symbol}\n{name}",
+      "rune.u": "{name}\nАромат: u (верхний).\nРазмер значка обозначает модуль заряда, не массу.",
+      "rune.d": "{name}\nАромат: d (нижний).\nРазмер значка обозначает модуль заряда, не массу.",
+      "tooltip.particle": "{kind} · заряд {charge} e",
+      "tooltip.composition": "Состав:",
+      "tooltip.valence": "Валентный состав: {formula}",
+      "tooltip.componentExamples": "Примеры частиц с таким компонентом:",
+      "tooltip.compositionExamples": "Примеры частиц с таким составом:",
+      "tooltip.reserved": "В закреплённом составе.",
+      "piece.reserved": "{name}. В закреплённом составе.",
+      "piece.add": "Добавить: {name}",
+      "piece.remove": "Убрать: {name}",
+      "piece.addLarge": "Добавить большой камень: {name}",
+      "piece.addSmall": "Добавить малый камень: {name}",
+      "piece.addComponent": "Добавить {name}",
+      "axis.color": "Цвет: {color}",
+      "axis.anticolor": "Антицвет: {color}",
+      "axis.empty": "{axis}, гнездо свободно",
+      "result.empty.artifact": "Помести камень на алхимический круг",
+      "result.empty.instrument": "Состав не выбран",
+      "result.hint.artifact": "Нажми на камень в инвентаре или на свободное гнездо",
+      "result.hint.instrument": "Выбери кварк или антикварк",
+      "result.smallComplete": "Малая печать завершена",
+      "result.largeComplete": "Большая печать завершена",
+      "result.one": "Добавь ещё один камень",
+      "result.two": "Добавь или замени камень",
+      "result.three": "Убери один камень, чтобы попробовать другой",
+      "result.seeking.instrument": "Цвет не скомпенсирован",
+      "result.components": "Компонентов: {count} · электрический заряд {charge} e",
+      "field.count.artifact": "Рун: {count}.",
+      "field.count.instrument": "Кварков и антикварков: {count}.",
+      "field.empty": "Круг пуст.",
+      "field.centered": "Центр достигнут.",
+      "field.offset": "Фокус смещён от центра.",
+      "field.unfinished": "Печать не собрана.",
+      "field.charge": "Электрический заряд {charge} e.",
+      "slots.full.artifact": "В круге уже три камня. Убери один, чтобы добавить другой.",
+      "slots.full.instrument": "В составе уже три компонента. Убери один, чтобы добавить другой."
+    }, en: {
+      "app.artifact": "Equilibrium",
+      "app.instrument": "Color Balance",
+      "theme.label": "Presentation",
+      "theme.artifact": "Alchemy",
+      "theme.instrument": "Quark Model",
+      "language.label": "Language",
+      "sound.on": "Sound on",
+      "sound.off": "Sound off",
+      "sound.onLabel": "Sound is on. Turn sound off",
+      "sound.offLabel": "Sound is off. Turn sound on",
+      "library.artifact": "Inventory",
+      "library.instrument": "Quarks and Antiquarks",
+      "forward.artifact": "Forward",
+      "forward.instrument": "Quarks",
+      "reverse.artifact": "Reverse",
+      "reverse.instrument": "Antiquarks",
+      "libraryNote.artifact": "Select a stone to add it to the circle.",
+      "libraryNote.instrument": "Select a component to add to the current composition.",
+      "examples.heading": "Combinations",
+      "examples.pair": "Pair",
+      "examples.triple": "Triple",
+      "examples.pairLabel": "Build a random pair",
+      "examples.tripleLabel": "Build a random triple",
+      "examples.randomPair": "Random pair",
+      "examples.randomTriple": "Random triple",
+      "examples.randomComposition": "Random composition: {count} components",
+      "field.artifact": "Alchemy Circle",
+      "field.instrument": "Color Diagram",
+      "fieldTitle.artifact": "Balance of three symbols and their opposites",
+      "fieldTitle.instrument": "Color charge diagram",
+      "field.colorSpace": "COLOR SPACE",
+      "slots.artifact": "Stones in the circle, up to three at a time",
+      "slots.instrument": "Current composition: up to three quarks or antiquarks",
+      "slots.count.artifact": "Stones: {count} / 3",
+      "slots.count.instrument": "Components: {count} / 3",
+      "slots.capacity": "Free slots: {free} of {total}",
+      "inventory.artifact": "Available stones: {free} of {total}. Reserved: {reserved}.",
+      "inventory.instrument": "Available quarks and antiquarks: {free} of {total}. Reserved: {reserved}.",
+      "reset": "Clear ↺",
+      "bind.artifact": "Bind Seal",
+      "bind.instrument": "Save Combination",
+      "readout.label": "Readout",
+      "charge.heading": "Electric Charge",
+      "ability.heading": "Result",
+      "ability.empty": "No seal formed",
+      "ability.hint": "Bring the signs into balance.",
+      "direction.inward": "Toward you",
+      "direction.outward": "Away from you",
+      "action.scale": "Action Scale",
+      "balance.heading": "Color Balance",
+      "balance.empty": "No quarks",
+      "balance.ready": "Balanced",
+      "balance.seeking": "Unbalanced",
+      "balance.anticolor": "anticolor",
+      "balance.color": "color",
+      "abilities.artifact": "Ability Panel",
+      "abilities.instrument": "Particles",
+      "releaseAll.artifact": "Dismantle All Abilities",
+      "releaseAll.instrument": "Dismantle All Particles",
+      "ability.freeSlot": "Empty slot {index}",
+      "ability.inspect": "{name}. Show composition",
+      "ability.release": "Dismantle: {name}",
+      "ability.saved": "Saved: {name}. Components reserved.",
+      "ability.returned.artifact": "Stones returned: {count}.",
+      "ability.returned.instrument": "Components returned: {count}.",
+      "scienceSummary.artifact": "What Lies Beneath",
+      "scienceSummary.instrument": "About the Quark Model",
+      "science.intro": "The symbols represent quarks and antiquarks.",
+      "science.symbols": "The three sign families represent color charges; opposite orientations correspond to color and anticolor. The quark model uses u, d, and overbars for antiquarks. Icon size shows the magnitude of electric charge, not a quark's mass or physical size.",
+      "science.model": "A matching color + anticolor pair or a triple of three different colors or three different anticolors forms a closed bond here. This is a visual model of combination rules inspired by quantum chromodynamics, not a simulation of it. The center of the diagram illustrates color balance; quantum states, spin, and strong-interaction dynamics are not modeled.",
+      "science.result": "{kind}. Quark-composition analog: {analog}. Electric charge: {charge} e. Mass and spin are not determined here.",
+      "science.seeking": "Color charges are not yet balanced. A closed pair corresponds to a meson; a closed triple to a baryon or antibaryon.",
+      "edition.artifact": "01 · ALCHEMY",
+      "edition.instrument": "02 · QUARK MODEL",
+      "action.compression.name": "Compression",
+      "action.compression.genitive": "compression",
+      "action.compression.detail": "Compacts matter into a dense mass.",
+      "action.compression.seal": "Compression Seal",
+      "action.compression.full": "Large Compression Seal",
+      "action.attraction.name": "Attraction",
+      "action.attraction.genitive": "attraction",
+      "action.attraction.detail": "Sharply pulls the chosen object toward you.",
+      "action.attraction.smallDetail": "Weakly pulls the chosen object toward you.",
+      "action.attraction.smallName": "Lesser Attraction",
+      "action.attraction.seal": "Attraction Seal",
+      "action.attraction.smallSeal": "Lesser Attraction Seal",
+      "action.attraction.full": "Large Attraction Seal",
+      "action.holding.name": "Holding",
+      "action.holding.genitive": "holding",
+      "action.holding.detail": "Immobilizes the chosen object, fixing it in place.",
+      "action.holding.smallDetail": "Restrains the chosen object's movement.",
+      "action.holding.smallName": "Lesser Holding",
+      "action.holding.seal": "Holding Seal",
+      "action.holding.smallSeal": "Lesser Holding Seal",
+      "action.holding.full": "Large Holding Seal",
+      "action.repulsion.name": "Repulsion",
+      "action.repulsion.genitive": "repulsion",
+      "action.repulsion.detail": "Throws the chosen object away from you.",
+      "action.repulsion.smallDetail": "Weakly pushes the chosen object away from you.",
+      "action.repulsion.smallName": "Lesser Repulsion",
+      "action.repulsion.seal": "Repulsion Seal",
+      "action.repulsion.smallSeal": "Lesser Repulsion Seal",
+      "action.repulsion.full": "Large Repulsion Seal",
+      "action.dispersion.name": "Dispersion",
+      "action.dispersion.genitive": "dispersion",
+      "action.dispersion.detail": "Breaks apart the object, scattering its matter around it.",
+      "action.dispersion.seal": "Dispersion Seal",
+      "action.dispersion.full": "Large Dispersion Seal",
+      "kind.meson": "Meson",
+      "kind.baryon": "Baryon",
+      "kind.antibaryon": "Antibaryon",
+      "particle.neutralPion": "neutral pion π⁰ (component)",
+      "particle.neutralRho": "neutral ρ meson ρ⁰ (component)",
+      "particle.pion": "pion π{sign}",
+      "particle.rho": "ρ meson ρ{sign}",
+      "particle.neutralNote": "The uū and dd̄ pairs are components of superpositions. A single pair does not uniquely identify a neutral meson.",
+      "particle.antiDeltaMinus": "antiparticle of Δ⁻, charge +1 e",
+      "particle.antineutron": "antineutron",
+      "particle.antiDeltaZero": "antiparticle of Δ⁰, charge 0 e",
+      "particle.antiproton": "antiproton",
+      "particle.antiDeltaPlus": "antiparticle of Δ⁺, charge −1 e",
+      "particle.antiDeltaPlusPlus": "antiparticle of Δ⁺⁺, charge −2 e",
+      "particle.neutron": "neutron",
+      "particle.proton": "proton",
+      "color.red": "red",
+      "color.green": "green",
+      "color.blue": "blue",
+      "family.red": "psi",
+      "family.green": "lightning",
+      "family.blue": "aether",
+      "sign.red.forward": "Forward psi sign",
+      "sign.red.reverse": "Reverse psi sign",
+      "sign.green.forward": "Forward lightning sign",
+      "sign.green.reverse": "Reverse lightning sign",
+      "sign.blue.forward": "Forward aether sign",
+      "sign.blue.reverse": "Reverse aether sign",
+      "piece.artifact.inward": "{sign}. Toward you: {magnitude}/3",
+      "piece.artifact.outward": "{sign}. Away from you: {magnitude}/3",
+      "piece.red.quark": "Red {flavor} quark, charge {charge} e",
+      "piece.red.antiquark": "Antired {flavor} antiquark, charge {charge} e",
+      "piece.green.quark": "Green {flavor} quark, charge {charge} e",
+      "piece.green.antiquark": "Antigreen {flavor} antiquark, charge {charge} e",
+      "piece.blue.quark": "Blue {flavor} quark, charge {charge} e",
+      "piece.blue.antiquark": "Antiblue {flavor} antiquark, charge {charge} e",
+      "rune.large": "Large stone {symbol}\n{name}",
+      "rune.small": "Small stone {symbol}\n{name}",
+      "rune.u": "{name}\nFlavor: u (up).\nIcon size indicates charge magnitude, not mass.",
+      "rune.d": "{name}\nFlavor: d (down).\nIcon size indicates charge magnitude, not mass.",
+      "tooltip.particle": "{kind} · charge {charge} e",
+      "tooltip.composition": "Composition:",
+      "tooltip.valence": "Valence composition: {formula}",
+      "tooltip.componentExamples": "Example particles with this component:",
+      "tooltip.compositionExamples": "Example particles with this composition:",
+      "tooltip.reserved": "Reserved in a saved composition.",
+      "piece.reserved": "{name}. Reserved in a saved composition.",
+      "piece.add": "Add: {name}",
+      "piece.remove": "Remove: {name}",
+      "piece.addLarge": "Add large stone: {name}",
+      "piece.addSmall": "Add small stone: {name}",
+      "piece.addComponent": "Add {name}",
+      "axis.color": "Color: {color}",
+      "axis.anticolor": "Anticolor: {color}",
+      "axis.empty": "{axis}, empty slot",
+      "result.empty.artifact": "Place a stone in the alchemy circle",
+      "result.empty.instrument": "No composition selected",
+      "result.hint.artifact": "Select a stone in the inventory or an empty slot",
+      "result.hint.instrument": "Select a quark or antiquark",
+      "result.smallComplete": "Lesser seal complete",
+      "result.largeComplete": "Large seal complete",
+      "result.one": "Add another stone",
+      "result.two": "Add or replace a stone",
+      "result.three": "Remove a stone to try another",
+      "result.seeking.instrument": "Color is unbalanced",
+      "result.components": "Components: {count} · electric charge {charge} e",
+      "field.count.artifact": "Runes: {count}.",
+      "field.count.instrument": "Quarks and antiquarks: {count}.",
+      "field.empty": "The circle is empty.",
+      "field.centered": "Center reached.",
+      "field.offset": "Focus is off-center.",
+      "field.unfinished": "No seal formed.",
+      "field.charge": "Electric charge {charge} e.",
+      "slots.full.artifact": "The circle already holds three stones. Remove one to add another.",
+      "slots.full.instrument": "The composition already has three components. Remove one to add another."
+    }, es: {
+      "app.artifact": "Equilibrio",
+      "app.instrument": "Balance de color",
+      "theme.label": "Estilo visual",
+      "theme.artifact": "Alquimia",
+      "theme.instrument": "Modelo de quarks",
+      "language.label": "Idioma",
+      "sound.on": "Sonido activado",
+      "sound.off": "Sonido desactivado",
+      "sound.onLabel": "Sonido activado. Desactiva el sonido",
+      "sound.offLabel": "Sonido desactivado. Activa el sonido",
+      "library.artifact": "Inventario",
+      "library.instrument": "Quarks y antiquarks",
+      "forward.artifact": "Directos",
+      "forward.instrument": "Quarks",
+      "reverse.artifact": "Inversos",
+      "reverse.instrument": "Antiquarks",
+      "libraryNote.artifact": "Pulsa una piedra para añadirla al círculo.",
+      "libraryNote.instrument": "Elige un componente para la composición actual.",
+      "examples.heading": "Combinaciones",
+      "examples.pair": "Par",
+      "examples.triple": "Trío",
+      "examples.pairLabel": "Forma un par al azar",
+      "examples.tripleLabel": "Forma un trío al azar",
+      "examples.randomPair": "Par al azar",
+      "examples.randomTriple": "Trío al azar",
+      "examples.randomComposition": "Composición al azar: {count} componentes",
+      "field.artifact": "Círculo alquímico",
+      "field.instrument": "Diagrama de color",
+      "fieldTitle.artifact": "Equilibrio entre tres símbolos y sus opuestos",
+      "fieldTitle.instrument": "Diagrama de cargas de color",
+      "field.colorSpace": "ESPACIO DE COLOR",
+      "slots.artifact": "Piedras en el círculo: hasta tres a la vez",
+      "slots.instrument": "Composición actual: hasta tres quarks o antiquarks",
+      "slots.count.artifact": "{count} / 3 piedras",
+      "slots.count.instrument": "Componentes: {count} / 3",
+      "slots.capacity": "Espacios libres: {free} de {total}",
+      "inventory.artifact": "Piedras libres: {free} de {total}. Reservadas: {reserved}.",
+      "inventory.instrument": "Quarks y antiquarks disponibles: {free} de {total}. Reservados: {reserved}.",
+      "reset": "Vacía el círculo ↺",
+      "bind.artifact": "Fija el sello",
+      "bind.instrument": "Guarda la combinación",
+      "readout.label": "Lecturas",
+      "charge.heading": "Carga eléctrica",
+      "ability.heading": "Resultado",
+      "ability.empty": "Sello sin formar",
+      "ability.hint": "Equilibra los signos.",
+      "direction.inward": "Hacia ti",
+      "direction.outward": "Lejos de ti",
+      "action.scale": "Escala de acciones",
+      "balance.heading": "Balance de color",
+      "balance.empty": "Sin quarks",
+      "balance.ready": "Compensado",
+      "balance.seeking": "Sin compensar",
+      "balance.anticolor": "anticolor",
+      "balance.color": "color",
+      "abilities.artifact": "Panel de habilidades",
+      "abilities.instrument": "Partículas",
+      "releaseAll.artifact": "Deshaz todos los sellos",
+      "releaseAll.instrument": "Deshaz todas las partículas",
+      "ability.freeSlot": "Espacio libre {index}",
+      "ability.inspect": "{name}. Muestra la composición",
+      "ability.release": "Deshaz: {name}",
+      "ability.saved": "Se ha guardado: {name}. Componentes reservados.",
+      "ability.returned.artifact": "Piedras devueltas: {count}.",
+      "ability.returned.instrument": "Componentes devueltos: {count}.",
+      "scienceSummary.artifact": "Lo que hay detrás",
+      "scienceSummary.instrument": "Sobre el modelo de quarks",
+      "science.intro": "Los símbolos representan quarks y antiquarks.",
+      "science.symbols": "Las tres familias representan cargas de color; las orientaciones opuestas corresponden al color y al anticolor. El modelo de quarks usa las letras u y d, y una barra superior para los antiquarks. El tamaño del símbolo indica el valor absoluto de la carga eléctrica, no la masa ni el tamaño físico del quark.",
+      "science.model": "Un par de color y su anticolor correspondiente, o un trío de tres colores distintos o de tres anticolores distintos, forman aquí una unión cerrada. Es un modelo visual de las reglas de combinación inspirado en la cromodinámica cuántica, no una simulación de esta teoría. El centro del diagrama ilustra la compensación de las cargas de color; no se modelan los estados cuánticos, el espín ni la dinámica de la interacción fuerte.",
+      "science.result": "{kind}. Análogo según su composición de quarks: {analog}. Carga eléctrica: {charge} e. Aquí no se determinan la masa ni el espín.",
+      "science.seeking": "Las cargas de color aún no están compensadas. Un par cerrado corresponde a un mesón; un trío, a un barión o antibarión.",
+      "edition.artifact": "01 · ALQUIMIA",
+      "edition.instrument": "02 · MODELO DE QUARKS",
+      "action.compression.name": "Compresión",
+      "action.compression.genitive": "de compresión",
+      "action.compression.detail": "Comprime la materia hasta formar una masa compacta y densa.",
+      "action.compression.seal": "Sello de compresión",
+      "action.compression.full": "Sello grande de compresión",
+      "action.attraction.name": "Atracción",
+      "action.attraction.genitive": "de atracción",
+      "action.attraction.detail": "Tira bruscamente del objeto elegido hacia ti.",
+      "action.attraction.smallDetail": "Atrae suavemente el objeto elegido hacia ti.",
+      "action.attraction.smallName": "Atracción menor",
+      "action.attraction.seal": "Sello de atracción",
+      "action.attraction.smallSeal": "Sello pequeño de atracción",
+      "action.attraction.full": "Sello grande de atracción",
+      "action.holding.name": "Retención",
+      "action.holding.genitive": "de retención",
+      "action.holding.detail": "Inmoviliza el objeto elegido y lo fija en su sitio.",
+      "action.holding.smallDetail": "Limita el movimiento del objeto elegido.",
+      "action.holding.smallName": "Retención menor",
+      "action.holding.seal": "Sello de retención",
+      "action.holding.smallSeal": "Sello pequeño de retención",
+      "action.holding.full": "Sello grande de retención",
+      "action.repulsion.name": "Repulsión",
+      "action.repulsion.genitive": "de repulsión",
+      "action.repulsion.detail": "Lanza el objeto elegido lejos de ti.",
+      "action.repulsion.smallDetail": "Empuja suavemente el objeto elegido lejos de ti.",
+      "action.repulsion.smallName": "Repulsión menor",
+      "action.repulsion.seal": "Sello de repulsión",
+      "action.repulsion.smallSeal": "Sello pequeño de repulsión",
+      "action.repulsion.full": "Sello grande de repulsión",
+      "action.dispersion.name": "Dispersión",
+      "action.dispersion.genitive": "de dispersión",
+      "action.dispersion.detail": "Desintegra el objeto elegido y dispersa su materia alrededor.",
+      "action.dispersion.seal": "Sello de dispersión",
+      "action.dispersion.full": "Sello grande de dispersión",
+      "kind.meson": "Mesón",
+      "kind.baryon": "Barión",
+      "kind.antibaryon": "Antibarión",
+      "particle.neutralPion": "pión neutro π⁰ (componente)",
+      "particle.neutralRho": "mesón rho neutro ρ⁰ (componente)",
+      "particle.pion": "pión π{sign}",
+      "particle.rho": "mesón rho ρ{sign}",
+      "particle.neutralNote": "Los pares uū y dd̄ forman parte de superposiciones. Un par por sí solo no determina un mesón neutro.",
+      "particle.antiDeltaMinus": "antipartícula de Δ⁻, carga +1 e",
+      "particle.antineutron": "antineutrón",
+      "particle.antiDeltaZero": "antipartícula de Δ⁰, carga 0 e",
+      "particle.antiproton": "antiprotón",
+      "particle.antiDeltaPlus": "antipartícula de Δ⁺, carga −1 e",
+      "particle.antiDeltaPlusPlus": "antipartícula de Δ⁺⁺, carga −2 e",
+      "particle.neutron": "neutrón",
+      "particle.proton": "protón",
+      "color.red": "rojo",
+      "color.green": "verde",
+      "color.blue": "azul",
+      "family.red": "psi",
+      "family.green": "rayo",
+      "family.blue": "éter",
+      "sign.red.forward": "Signo psi directo",
+      "sign.red.reverse": "Signo psi inverso",
+      "sign.green.forward": "Signo de rayo directo",
+      "sign.green.reverse": "Signo de rayo inverso",
+      "sign.blue.forward": "Signo de éter directo",
+      "sign.blue.reverse": "Signo de éter inverso",
+      "piece.artifact.inward": "{sign}. Hacia ti: {magnitude}/3",
+      "piece.artifact.outward": "{sign}. Lejos de ti: {magnitude}/3",
+      "piece.red.quark": "Quark {flavor} rojo, carga {charge} e",
+      "piece.red.antiquark": "Antiquark {flavor} antirrojo, carga {charge} e",
+      "piece.green.quark": "Quark {flavor} verde, carga {charge} e",
+      "piece.green.antiquark": "Antiquark {flavor} antiverde, carga {charge} e",
+      "piece.blue.quark": "Quark {flavor} azul, carga {charge} e",
+      "piece.blue.antiquark": "Antiquark {flavor} antiazul, carga {charge} e",
+      "rune.large": "Piedra grande {symbol}\n{name}",
+      "rune.small": "Piedra pequeña {symbol}\n{name}",
+      "rune.u": "{name}\nSabor: u (arriba).\nEl tamaño del símbolo indica el valor absoluto de la carga, no la masa.",
+      "rune.d": "{name}\nSabor: d (abajo).\nEl tamaño del símbolo indica el valor absoluto de la carga, no la masa.",
+      "tooltip.particle": "{kind} · carga {charge} e",
+      "tooltip.composition": "Composición:",
+      "tooltip.valence": "Composición de valencia: {formula}",
+      "tooltip.componentExamples": "Ejemplos de partículas con este componente:",
+      "tooltip.compositionExamples": "Ejemplos de partículas con esta composición:",
+      "tooltip.reserved": "Reservado en una composición guardada.",
+      "piece.reserved": "{name}. Reservado en una composición guardada.",
+      "piece.add": "Añade: {name}",
+      "piece.remove": "Retira: {name}",
+      "piece.addLarge": "Añade una piedra grande: {name}",
+      "piece.addSmall": "Añade una piedra pequeña: {name}",
+      "piece.addComponent": "Añade {name}",
+      "axis.color": "Color: {color}",
+      "axis.anticolor": "Anticolor: {color}",
+      "axis.empty": "{axis}, espacio libre",
+      "result.empty.artifact": "Coloca una piedra en el círculo alquímico",
+      "result.empty.instrument": "Sin composición seleccionada",
+      "result.hint.artifact": "Pulsa una piedra del inventario o un espacio libre",
+      "result.hint.instrument": "Elige un quark o un antiquark",
+      "result.smallComplete": "Sello pequeño completo",
+      "result.largeComplete": "Sello grande completo",
+      "result.one": "Añade otra piedra",
+      "result.two": "Añade o cambia una piedra",
+      "result.three": "Retira una piedra para probar otra",
+      "result.seeking.instrument": "Color sin compensar",
+      "result.components": "Componentes: {count} · carga eléctrica {charge} e",
+      "field.count.artifact": "Runas: {count}.",
+      "field.count.instrument": "Quarks y antiquarks: {count}.",
+      "field.empty": "El círculo está vacío.",
+      "field.centered": "Se ha alcanzado el centro.",
+      "field.offset": "El foco está desplazado del centro.",
+      "field.unfinished": "El sello está sin formar.",
+      "field.charge": "Carga eléctrica {charge} e.",
+      "slots.full.artifact": "Ya hay tres piedras en el círculo. Retira una para añadir otra.",
+      "slots.full.instrument": "La composición ya tiene tres componentes. Retira uno para añadir otro."
+    }, pt: {
+      "app.artifact": "Equilíbrio",
+      "app.instrument": "Equilíbrio de cores",
+      "theme.label": "Estilo visual",
+      "theme.artifact": "Alquimia",
+      "theme.instrument": "Modelo de quarks",
+      "language.label": "Idioma",
+      "sound.on": "Som ligado",
+      "sound.off": "Som desligado",
+      "sound.onLabel": "Som ligado. Desligar o som",
+      "sound.offLabel": "Som desligado. Ligar o som",
+      "library.artifact": "Inventário",
+      "library.instrument": "Quarks e antiquarks",
+      "forward.artifact": "Diretos",
+      "forward.instrument": "Quarks",
+      "reverse.artifact": "Inversos",
+      "reverse.instrument": "Antiquarks",
+      "libraryNote.artifact": "Toque em uma pedra para adicioná-la ao círculo.",
+      "libraryNote.instrument": "Escolha um componente para a composição atual.",
+      "examples.heading": "Combinações",
+      "examples.pair": "Par",
+      "examples.triple": "Trio",
+      "examples.pairLabel": "Montar um par aleatório",
+      "examples.tripleLabel": "Montar um trio aleatório",
+      "examples.randomPair": "Par aleatório",
+      "examples.randomTriple": "Trio aleatório",
+      "examples.randomComposition": "Composição aleatória: {count} componentes",
+      "field.artifact": "Círculo alquímico",
+      "field.instrument": "Diagrama de cores",
+      "fieldTitle.artifact": "Equilíbrio entre três símbolos e seus opostos",
+      "fieldTitle.instrument": "Diagrama das cargas de cor",
+      "field.colorSpace": "ESPAÇO DE CORES",
+      "slots.artifact": "Pedras no círculo: no máximo três por vez",
+      "slots.instrument": "Composição atual: até três quarks ou antiquarks",
+      "slots.count.artifact": "{count} / 3 pedras",
+      "slots.count.instrument": "Componentes: {count} / 3",
+      "slots.capacity": "Espaços livres: {free} de {total}",
+      "inventory.artifact": "Pedras livres: {free} de {total}. Reservadas: {reserved}.",
+      "inventory.instrument": "Quarks e antiquarks disponíveis: {free} de {total}. Reservados: {reserved}.",
+      "reset": "Limpar ↺",
+      "bind.artifact": "Vincular sigilo",
+      "bind.instrument": "Salvar combinação",
+      "readout.label": "Leituras",
+      "charge.heading": "Carga elétrica",
+      "ability.heading": "Resultado",
+      "ability.empty": "Sigilo incompleto",
+      "ability.hint": "Equilibre os sinais.",
+      "direction.inward": "Em direção a você",
+      "direction.outward": "Para longe de você",
+      "action.scale": "Escala de ações",
+      "balance.heading": "Equilíbrio de cores",
+      "balance.empty": "Sem quarks",
+      "balance.ready": "Equilibrado",
+      "balance.seeking": "Desequilibrado",
+      "balance.anticolor": "anticor",
+      "balance.color": "cor",
+      "abilities.artifact": "Habilidades",
+      "abilities.instrument": "Partículas",
+      "releaseAll.artifact": "Desmontar todas as habilidades",
+      "releaseAll.instrument": "Desmontar todas as partículas",
+      "ability.freeSlot": "Espaço livre {index}",
+      "ability.inspect": "{name}. Mostrar composição",
+      "ability.release": "Desmontar: {name}",
+      "ability.saved": "Salvo: {name}. Componentes reservados.",
+      "ability.returned.artifact": "Pedras devolvidas: {count}.",
+      "ability.returned.instrument": "Componentes devolvidos: {count}.",
+      "scienceSummary.artifact": "O que há por trás",
+      "scienceSummary.instrument": "Sobre o modelo de quarks",
+      "science.intro": "Por trás dos símbolos estão quarks e antiquarks.",
+      "science.symbols": "As três famílias representam cargas de cor, e as orientações opostas correspondem à cor e à anticor. No modelo de quarks, usamos u, d e uma barra sobre a letra para indicar antiquarks. O tamanho do símbolo indica o módulo da carga elétrica, não a massa nem o tamanho físico do quark.",
+      "science.model": "Um par de uma cor e sua anticor correspondente, ou um trio de três cores diferentes ou de três anticores diferentes, forma aqui uma ligação fechada. Este é um modelo visual das regras de combinação, inspirado na cromodinâmica quântica, não uma simulação dela. O centro do diagrama ilustra a compensação das cargas de cor. Estados quânticos, spin e a dinâmica da interação forte não são modelados.",
+      "science.result": "{kind}. Análogo pela composição de quarks: {analog}. Carga elétrica: {charge} e. A massa e o spin não são determinados aqui.",
+      "science.seeking": "As cargas de cor ainda não se compensam. Um par fechado corresponde a um méson; um trio, a um bárion ou antibárion.",
+      "edition.artifact": "01 · ALQUIMIA",
+      "edition.instrument": "02 · MODELO DE QUARKS",
+      "action.compression.name": "Compressão",
+      "action.compression.genitive": "de compressão",
+      "action.compression.detail": "Compacta a matéria em um aglomerado denso.",
+      "action.compression.seal": "Sigilo de compressão",
+      "action.compression.full": "Grande sigilo de compressão",
+      "action.attraction.name": "Atração",
+      "action.attraction.genitive": "de atração",
+      "action.attraction.detail": "Puxa bruscamente o objeto escolhido em direção a você.",
+      "action.attraction.smallDetail": "Puxa levemente o objeto escolhido em direção a você.",
+      "action.attraction.smallName": "Atração menor",
+      "action.attraction.seal": "Sigilo de atração",
+      "action.attraction.smallSeal": "Sigilo menor de atração",
+      "action.attraction.full": "Grande sigilo de atração",
+      "action.holding.name": "Contenção",
+      "action.holding.genitive": "de contenção",
+      "action.holding.detail": "Imobiliza o objeto escolhido, mantendo-o no lugar.",
+      "action.holding.smallDetail": "Restringe o movimento do objeto escolhido.",
+      "action.holding.smallName": "Contenção menor",
+      "action.holding.seal": "Sigilo de contenção",
+      "action.holding.smallSeal": "Sigilo menor de contenção",
+      "action.holding.full": "Grande sigilo de contenção",
+      "action.repulsion.name": "Repulsão",
+      "action.repulsion.genitive": "de repulsão",
+      "action.repulsion.detail": "Arremessa o objeto escolhido para longe de você.",
+      "action.repulsion.smallDetail": "Empurra levemente o objeto escolhido para longe de você.",
+      "action.repulsion.smallName": "Repulsão menor",
+      "action.repulsion.seal": "Sigilo de repulsão",
+      "action.repulsion.smallSeal": "Sigilo menor de repulsão",
+      "action.repulsion.full": "Grande sigilo de repulsão",
+      "action.dispersion.name": "Dispersão",
+      "action.dispersion.genitive": "de dispersão",
+      "action.dispersion.detail": "Desintegra o objeto escolhido, espalhando sua matéria ao redor.",
+      "action.dispersion.seal": "Sigilo de dispersão",
+      "action.dispersion.full": "Grande sigilo de dispersão",
+      "kind.meson": "Méson",
+      "kind.baryon": "Bárion",
+      "kind.antibaryon": "Antibárion",
+      "particle.neutralPion": "píon neutro π⁰ (componente)",
+      "particle.neutralRho": "méson neutro ρ⁰ (componente)",
+      "particle.pion": "píon π{sign}",
+      "particle.rho": "méson ρ{sign}",
+      "particle.neutralNote": "Os pares uū e dd̄ participam de superposições. Um par isolado não determina o méson neutro.",
+      "particle.antiDeltaMinus": "antipartícula de Δ⁻, carga +1 e",
+      "particle.antineutron": "antinêutron",
+      "particle.antiDeltaZero": "antipartícula de Δ⁰, carga 0 e",
+      "particle.antiproton": "antipróton",
+      "particle.antiDeltaPlus": "antipartícula de Δ⁺, carga −1 e",
+      "particle.antiDeltaPlusPlus": "antipartícula de Δ⁺⁺, carga −2 e",
+      "particle.neutron": "nêutron",
+      "particle.proton": "próton",
+      "color.red": "vermelho",
+      "color.green": "verde",
+      "color.blue": "azul",
+      "family.red": "psi",
+      "family.green": "raio",
+      "family.blue": "éter",
+      "sign.red.forward": "Sinal direto de psi",
+      "sign.red.reverse": "Sinal inverso de psi",
+      "sign.green.forward": "Sinal direto de raio",
+      "sign.green.reverse": "Sinal inverso de raio",
+      "sign.blue.forward": "Sinal direto de éter",
+      "sign.blue.reverse": "Sinal inverso de éter",
+      "piece.artifact.inward": "{sign}. Em direção a você: {magnitude}/3",
+      "piece.artifact.outward": "{sign}. Para longe de você: {magnitude}/3",
+      "piece.red.quark": "Quark {flavor} vermelho, carga {charge} e",
+      "piece.red.antiquark": "Antiquark {flavor} antivermelho, carga {charge} e",
+      "piece.green.quark": "Quark {flavor} verde, carga {charge} e",
+      "piece.green.antiquark": "Antiquark {flavor} antiverde, carga {charge} e",
+      "piece.blue.quark": "Quark {flavor} azul, carga {charge} e",
+      "piece.blue.antiquark": "Antiquark {flavor} antiazul, carga {charge} e",
+      "rune.large": "Pedra grande {symbol}\n{name}",
+      "rune.small": "Pedra pequena {symbol}\n{name}",
+      "rune.u": "{name}\nSabor: u (up).\nO tamanho do símbolo indica o módulo da carga, não a massa.",
+      "rune.d": "{name}\nSabor: d (down).\nO tamanho do símbolo indica o módulo da carga, não a massa.",
+      "tooltip.particle": "{kind} · carga {charge} e",
+      "tooltip.composition": "Composição:",
+      "tooltip.valence": "Composição de valência: {formula}",
+      "tooltip.componentExamples": "Exemplos de partículas com este componente:",
+      "tooltip.compositionExamples": "Exemplos de partículas com esta composição:",
+      "tooltip.reserved": "Reservado em uma composição salva.",
+      "piece.reserved": "{name}. Reservado em uma composição salva.",
+      "piece.add": "Adicionar: {name}",
+      "piece.remove": "Remover: {name}",
+      "piece.addLarge": "Adicionar pedra grande: {name}",
+      "piece.addSmall": "Adicionar pedra pequena: {name}",
+      "piece.addComponent": "Adicionar {name}",
+      "axis.color": "Cor: {color}",
+      "axis.anticolor": "Anticor: {color}",
+      "axis.empty": "{axis}, encaixe livre",
+      "result.empty.artifact": "Coloque uma pedra no círculo alquímico",
+      "result.empty.instrument": "Nenhuma composição escolhida",
+      "result.hint.artifact": "Toque em uma pedra no inventário ou em um encaixe livre",
+      "result.hint.instrument": "Escolha um quark ou antiquark",
+      "result.smallComplete": "Sigilo menor completo",
+      "result.largeComplete": "Grande sigilo completo",
+      "result.one": "Adicione mais uma pedra",
+      "result.two": "Adicione ou troque uma pedra",
+      "result.three": "Remova uma pedra para experimentar outra",
+      "result.seeking.instrument": "Cargas de cor desequilibradas",
+      "result.components": "Componentes: {count} · carga elétrica {charge} e",
+      "field.count.artifact": "Runas: {count}.",
+      "field.count.instrument": "Quarks e antiquarks: {count}.",
+      "field.empty": "O círculo está vazio.",
+      "field.centered": "Centro alcançado.",
+      "field.offset": "O foco está fora do centro.",
+      "field.unfinished": "Sigilo incompleto.",
+      "field.charge": "Carga elétrica {charge} e.",
+      "slots.full.artifact": "O círculo já tem três pedras. Remova uma para adicionar outra.",
+      "slots.full.instrument": "A composição já tem três componentes. Remova um para adicionar outro."
+    }, zh: {
+      "app.artifact": "平衡",
+      "app.instrument": "色荷平衡",
+      "theme.label": "显示模式",
+      "theme.artifact": "炼金术",
+      "theme.instrument": "夸克模型",
+      "language.label": "语言",
+      "sound.on": "声音开",
+      "sound.off": "声音关",
+      "sound.onLabel": "声音已开启。关闭声音",
+      "sound.offLabel": "声音已关闭。开启声音",
+      "library.artifact": "物品栏",
+      "library.instrument": "夸克与反夸克",
+      "forward.artifact": "正相",
+      "forward.instrument": "夸克",
+      "reverse.artifact": "反相",
+      "reverse.instrument": "反夸克",
+      "libraryNote.artifact": "点击符石，将其放入法阵。",
+      "libraryNote.instrument": "选择组分，加入当前组合。",
+      "examples.heading": "组合",
+      "examples.pair": "二元组",
+      "examples.triple": "三元组",
+      "examples.pairLabel": "随机组合两个组分",
+      "examples.tripleLabel": "随机组合三个组分",
+      "examples.randomPair": "随机二元组",
+      "examples.randomTriple": "随机三元组",
+      "examples.randomComposition": "随机组合：{count} 个组分",
+      "field.artifact": "炼金法阵",
+      "field.instrument": "色荷图",
+      "fieldTitle.artifact": "三种符文及其反相符文的平衡",
+      "fieldTitle.instrument": "色荷示意图",
+      "field.colorSpace": "色荷空间",
+      "slots.artifact": "法阵中的符石，同时最多三块",
+      "slots.instrument": "当前组合：最多三个夸克或反夸克",
+      "slots.count.artifact": "{count} / 3 块符石",
+      "slots.count.instrument": "组分：{count} / 3",
+      "slots.capacity": "空位：{free} / {total}",
+      "inventory.artifact": "可用符石：{free} / {total}。已占用：{reserved}。",
+      "inventory.instrument": "可用夸克与反夸克：{free} / {total}。已占用：{reserved}。",
+      "reset": "清空 ↺",
+      "bind.artifact": "绑定法印",
+      "bind.instrument": "保存组合",
+      "readout.label": "读数",
+      "charge.heading": "电荷",
+      "ability.heading": "结果",
+      "ability.empty": "法印尚未成形",
+      "ability.hint": "让符文达到平衡。",
+      "direction.inward": "朝向施法者",
+      "direction.outward": "远离施法者",
+      "action.scale": "作用刻度",
+      "balance.heading": "色荷平衡",
+      "balance.empty": "暂无夸克",
+      "balance.ready": "已抵消",
+      "balance.seeking": "未抵消",
+      "balance.anticolor": "反色",
+      "balance.color": "色荷",
+      "abilities.artifact": "能力栏",
+      "abilities.instrument": "粒子",
+      "releaseAll.artifact": "拆解所有已保存的能力",
+      "releaseAll.instrument": "拆解所有已保存的粒子",
+      "ability.freeSlot": "空位 {index}",
+      "ability.inspect": "{name}。查看组成",
+      "ability.release": "拆解：{name}",
+      "ability.saved": "已保存：{name}。组分已占用。",
+      "ability.returned.artifact": "已归还 {count} 块符石。",
+      "ability.returned.instrument": "已归还 {count} 个组分。",
+      "scienceSummary.artifact": "符文背后的原理",
+      "scienceSummary.instrument": "关于夸克模型",
+      "science.intro": "符文背后对应的是夸克与反夸克。",
+      "science.symbols": "三个符文家族代表三种色荷，相反的朝向对应色与反色。夸克模型视图使用 u、d 以及带上划线的反夸克符号。图标大小表示电荷的绝对值，而非夸克的质量或实际大小。",
+      "science.model": "在这里，同色的色荷与反色配对，或三种不同的色荷（或反色）组成三元组，即可形成闭合组合。这是受量子色动力学启发的组合规则演示，而非量子色动力学模拟。图的中心表示色荷抵消；本模型不模拟量子态、自旋或强相互作用的动力学。",
+      "science.result": "{kind}。按夸克组成类比：{analog}。电荷：{charge} e。此处不确定质量和自旋。",
+      "science.seeking": "色荷尚未抵消。闭合的二元组对应介子，三元组对应重子或反重子。",
+      "edition.artifact": "01 · 炼金术",
+      "edition.instrument": "02 · 夸克模型",
+      "action.compression.name": "压缩",
+      "action.compression.genitive": "压缩",
+      "action.compression.detail": "将物质压成致密的团块。",
+      "action.compression.seal": "压缩法印",
+      "action.compression.full": "大型压缩法印",
+      "action.attraction.name": "牵引",
+      "action.attraction.genitive": "牵引",
+      "action.attraction.detail": "将选中的物体猛地拉向你。",
+      "action.attraction.smallDetail": "以微弱的力量将选中的物体拉向你。",
+      "action.attraction.smallName": "小型牵引",
+      "action.attraction.seal": "牵引法印",
+      "action.attraction.smallSeal": "小型牵引法印",
+      "action.attraction.full": "大型牵引法印",
+      "action.holding.name": "定身",
+      "action.holding.genitive": "定身",
+      "action.holding.detail": "将选中的物体固定在原地，使其无法移动。",
+      "action.holding.smallDetail": "限制选中物体的移动。",
+      "action.holding.smallName": "小型定身",
+      "action.holding.seal": "定身法印",
+      "action.holding.smallSeal": "小型定身法印",
+      "action.holding.full": "大型定身法印",
+      "action.repulsion.name": "斥退",
+      "action.repulsion.genitive": "斥退",
+      "action.repulsion.detail": "将选中的物体抛向远离你的方向。",
+      "action.repulsion.smallDetail": "以微弱的力量将选中的物体推离你。",
+      "action.repulsion.smallName": "小型斥退",
+      "action.repulsion.seal": "斥退法印",
+      "action.repulsion.smallSeal": "小型斥退法印",
+      "action.repulsion.full": "大型斥退法印",
+      "action.dispersion.name": "消散",
+      "action.dispersion.genitive": "消散",
+      "action.dispersion.detail": "破坏物体的完整形态，使其物质向四周散开。",
+      "action.dispersion.seal": "消散法印",
+      "action.dispersion.full": "大型消散法印",
+      "kind.meson": "介子",
+      "kind.baryon": "重子",
+      "kind.antibaryon": "反重子",
+      "particle.neutralPion": "中性 π 介子 π⁰（组分）",
+      "particle.neutralRho": "中性 ρ 介子 ρ⁰（组分）",
+      "particle.pion": "π 介子 π{sign}",
+      "particle.rho": "ρ 介子 ρ{sign}",
+      "particle.neutralNote": "uū 和 dd̄ 夸克对是叠加态的组分。单独一对并不能确定是哪一种中性介子。",
+      "particle.antiDeltaMinus": "Δ⁻ 的反粒子，电荷 +1 e",
+      "particle.antineutron": "反中子",
+      "particle.antiDeltaZero": "Δ⁰ 的反粒子，电荷 0 e",
+      "particle.antiproton": "反质子",
+      "particle.antiDeltaPlus": "Δ⁺ 的反粒子，电荷 −1 e",
+      "particle.antiDeltaPlusPlus": "Δ⁺⁺ 的反粒子，电荷 −2 e",
+      "particle.neutron": "中子",
+      "particle.proton": "质子",
+      "color.red": "红",
+      "color.green": "绿",
+      "color.blue": "蓝",
+      "family.red": "灵能",
+      "family.green": "雷电",
+      "family.blue": "以太",
+      "sign.red.forward": "正相灵能符文",
+      "sign.red.reverse": "反相灵能符文",
+      "sign.green.forward": "正相雷电符文",
+      "sign.green.reverse": "反相雷电符文",
+      "sign.blue.forward": "正相以太符文",
+      "sign.blue.reverse": "反相以太符文",
+      "piece.artifact.inward": "{sign}。朝向施法者：{magnitude}/3",
+      "piece.artifact.outward": "{sign}。远离施法者：{magnitude}/3",
+      "piece.red.quark": "红色 {flavor} 夸克，电荷 {charge} e",
+      "piece.red.antiquark": "反红色 {flavor} 反夸克，电荷 {charge} e",
+      "piece.green.quark": "绿色 {flavor} 夸克，电荷 {charge} e",
+      "piece.green.antiquark": "反绿色 {flavor} 反夸克，电荷 {charge} e",
+      "piece.blue.quark": "蓝色 {flavor} 夸克，电荷 {charge} e",
+      "piece.blue.antiquark": "反蓝色 {flavor} 反夸克，电荷 {charge} e",
+      "rune.large": "大符石 {symbol}\n{name}",
+      "rune.small": "小符石 {symbol}\n{name}",
+      "rune.u": "{name}\n味：u（上夸克）。\n图标大小表示电荷的绝对值，而非质量。",
+      "rune.d": "{name}\n味：d（下夸克）。\n图标大小表示电荷的绝对值，而非质量。",
+      "tooltip.particle": "{kind} · 电荷 {charge} e",
+      "tooltip.composition": "组成：",
+      "tooltip.valence": "价夸克组成：{formula}",
+      "tooltip.componentExamples": "含此组分的粒子示例：",
+      "tooltip.compositionExamples": "具有此组成的粒子示例：",
+      "tooltip.reserved": "已被保存的组合占用。",
+      "piece.reserved": "{name}。已被保存的组合占用。",
+      "piece.add": "添加：{name}",
+      "piece.remove": "移除：{name}",
+      "piece.addLarge": "添加大符石：{name}",
+      "piece.addSmall": "添加小符石：{name}",
+      "piece.addComponent": "添加 {name}",
+      "axis.color": "色荷：{color}",
+      "axis.anticolor": "反色：{color}",
+      "axis.empty": "{axis}，槽位空闲",
+      "result.empty.artifact": "将符石放入炼金法阵",
+      "result.empty.instrument": "尚未选择组合",
+      "result.hint.artifact": "点击物品栏中的符石或空槽位",
+      "result.hint.instrument": "选择一个夸克或反夸克",
+      "result.smallComplete": "小型法印已完成",
+      "result.largeComplete": "大型法印已完成",
+      "result.one": "再添加一块符石",
+      "result.two": "添加或更换符石",
+      "result.three": "移除一块符石，再尝试其他符石",
+      "result.seeking.instrument": "色荷未抵消",
+      "result.components": "组分：{count} · 电荷 {charge} e",
+      "field.count.artifact": "符文：{count}。",
+      "field.count.instrument": "夸克与反夸克：{count}。",
+      "field.empty": "法阵为空。",
+      "field.centered": "已到达中心。",
+      "field.offset": "焦点偏离中心。",
+      "field.unfinished": "法印尚未成形。",
+      "field.charge": "电荷 {charge} e。",
+      "slots.full.artifact": "法阵中已有三块符石。移除一块后才能添加另一块。",
+      "slots.full.instrument": "组合中已有三个组分。移除一个后才能添加另一个。"
+    } };
+    // END TRANSLATIONS
+  </script>
+  <script id="localization">
+    'use strict';
+    const supportedLanguages = ['en', 'es', 'pt', 'zh', 'ru'];
+    let languageChoice = 'auto';
+    let language = 'en';
+
+    function resolveLanguage(choice) {
+      if (supportedLanguages.includes(choice)) return choice;
+      try {
+        const primary = new Intl.Locale(navigator.language).language;
+        return supportedLanguages.includes(primary) ? primary : 'en';
+      } catch { return 'en'; }
+    }
+
+    function t(key, params = {}) {
+      const text = translations[language]?.[key] ?? translations.en?.[key] ?? key;
+      return text.replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(params, name) ? String(params[name]) : match);
+    }
+
+    function setLanguage(choice) {
+      languageChoice = supportedLanguages.includes(choice) ? choice : 'auto';
+      language = resolveLanguage(languageChoice);
+      try { localStorage.setItem('qcd-language', languageChoice); } catch { /* File URLs may disallow storage. */ }
+      renderLanguage();
+    }
+
+    try {
+      const saved = localStorage.getItem('qcd-language');
+      if (saved === 'auto' || supportedLanguages.includes(saved)) languageChoice = saved;
+    } catch { /* The instrument also works without persistent storage. */ }
+    language = resolveLanguage(languageChoice);
+    document.documentElement.lang = language;
+    window.addEventListener('languagechange', () => {
+      if (languageChoice === 'auto') {
+        language = resolveLanguage('auto');
+        renderLanguage();
+      }
+    });
+  </script>
   <script>
     'use strict';
 
@@ -526,11 +1523,12 @@
     ];
     const byId = Object.fromEntries(pieces.map(piece => [piece.id, piece]));
     const colors = ['red', 'green', 'blue'];
-    const colorNames = { red: 'красный', green: 'зелёный', blue: 'синий' };
+    const colorNames = Object.fromEntries(colors.map(color => [color, '']));
+    colors.forEach(color => Object.defineProperty(colorNames, color, { enumerable: true, get: () => t(`color.${color}`) }));
     const families = {
-      red: { label: 'Ψ', name: 'пси', roman: 'I', path: 'M24 37V14M13 16V22Q13 28 24 28Q35 28 35 22V16' },
-      green: { label: 'ϟ', name: 'молния', roman: 'II', path: 'M29 10 16 25H25L19 38 33 21H24Z' },
-      blue: { label: '⟡', name: 'ромб', roman: 'III', path: 'M24 9Q21 21 12 24Q21 27 24 39Q27 27 36 24Q27 21 24 9Z' }
+      red: { label: 'Ψ', get name() { return t('family.red'); }, path: 'M24 37V14M13 16V22Q13 28 24 28Q35 28 35 22V16' },
+      green: { label: 'ϟ', get name() { return t('family.green'); }, path: 'M29 10 16 25H25L19 38 33 21H24Z' },
+      blue: { label: '⟡', get name() { return t('family.blue'); }, path: 'M24 9Q21 21 12 24Q21 27 24 39Q27 27 36 24Q27 21 24 9Z' }
     };
     const vectors = { red: { x: 0, y: -1 }, green: { x: -Math.sqrt(3) / 2, y: .5 }, blue: { x: Math.sqrt(3) / 2, y: .5 } };
     const center = { x: 320, y: 294 };
@@ -550,13 +1548,18 @@
     let slots = [null, null, null];
     const abilities = Array(6).fill(null);
     const actions = [
-      { id: 'compression', name: 'Сжатие', genitive: 'сжатия', detail: 'Собирает вещество в плотное целое.', path: 'M31 31 43 43M36 43H43V36M69 31 57 43M57 36V43H64M31 69 43 57M36 57H43V64M69 69 57 57M57 64V57H64M50 44 56 50 50 56 44 50Z' },
-      { id: 'attraction', name: 'Притяжение', genitive: 'притяжения', detail: 'Притягивает предмет к игроку, сохраняя его форму.', path: 'M28 50H43L37 44M43 50 37 56M72 50H57L63 44M57 50 63 56' },
-      { id: 'holding', name: 'Удержание', genitive: 'удержания', detail: 'Закрепляет предмет на месте.', path: 'M38 38H62V62H38ZM50 28V38M50 62V72M28 50H38M62 50H72' },
-      { id: 'repulsion', name: 'Отталкивание', genitive: 'отталкивания', detail: 'Отталкивает предмет от игрока как единое целое.', path: 'M43 50H28L34 44M28 50 34 56M57 50H72L66 44M72 50 66 56' },
-      { id: 'dispersion', name: 'Рассеивание', genitive: 'рассеивания', detail: 'Распыляет вещество в пространстве.', path: 'M43 43 31 31M31 38V31H38M57 43 69 31M62 31H69V38M43 57 31 69M31 62V69H38M57 57 69 69M62 69H69V62' }
+      { id: 'compression', path: 'M31 31 43 43M36 43H43V36M69 31 57 43M57 36V43H64M31 69 43 57M36 57H43V64M69 69 57 57M57 64V57H64M50 44 56 50 50 56 44 50Z' },
+      { id: 'attraction', path: 'M70 50H40M48 42 40 50 48 58' },
+      { id: 'holding', path: 'M38 38H62V62H38ZM50 28V38M50 62V72M28 50H38M62 50H72' },
+      { id: 'repulsion', path: 'M40 50H70M62 42 70 50 62 58' },
+      { id: 'dispersion', path: 'M43 43 31 31M31 38V31H38M57 43 69 31M62 31H69V38M43 57 31 69M31 62V69H38M57 57 69 69M62 69H69V62' }
     ];
-    const kindNames = { meson: 'Мезон', baryon: 'Барион', antibaryon: 'Антибарион' };
+    actions.forEach((action, index) => {
+      const fields = ['name', 'genitive', 'detail'];
+      if (index > 0 && index < 4) fields.push('smallDetail');
+      fields.forEach(field => Object.defineProperty(action, field, { enumerable: true, get: () => t(`action.${action.id}.${field}`) }));
+    });
+    const kindNames = { get meson() { return t('kind.meson'); }, get baryon() { return t('kind.baryon'); }, get antibaryon() { return t('kind.antibaryon'); } };
     let soundEnabled = true;
     let audio = null;
     let previousKey = '';
@@ -566,6 +1569,14 @@
     const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
     const motion = { from: { ...center }, target: { ...center }, startedAt: -Infinity, duration: 460 };
     const $ = id => document.getElementById(id);
+    const escapeHTML = text => String(text).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+    const messages = new Map();
+
+    function setMessage(id, key = '', params = {}) {
+      if (key) messages.set(id, { key, params });
+      else messages.delete(id);
+      $(id).textContent = key ? t(key, typeof params === 'function' ? params() : params) : '';
+    }
 
     function reservedIds() {
       return abilities.filter(Boolean).flat();
@@ -574,16 +1585,18 @@
     function abilityInfo(ids) {
       const small = ids.length === 2;
       const action = actions[totalThirds(ids) / 3 + 2];
-      return { action, small, label: small ? `Малое ${action.name.toLowerCase()}` : action.name,
-        full: `${small ? 'Малая' : 'Большая'} печать ${action.genitive}` };
+      return { action, small, detail: small ? action.smallDetail : action.detail,
+        label: t(`action.${action.id}.${small ? 'smallName' : 'name'}`),
+        full: t(`action.${action.id}.${small ? 'smallSeal' : 'full'}`) };
     }
 
     function sealIcon(ids) {
       const { action, small } = abilityInfo(ids);
+      const directional = action.id === 'attraction' || action.id === 'repulsion';
       return `<svg class="seal-icon" data-action="${action.id}" data-size="${small ? 'small' : 'large'}" width="100" height="100" viewBox="0 0 100 100" aria-hidden="true">
         <circle class="seal-rim" cx="50" cy="50" r="${small ? 32 : 40}"/>
         ${small ? '' : '<circle class="seal-rim" cx="50" cy="50" r="35"/><path class="seal-rim" d="M50 5V14M11 73 19 69M89 73 81 69"/>'}
-        <path d="${action.path}"/><circle cx="50" cy="50" r="2" fill="currentColor" stroke="none"/>
+        <g class="seal-symbol"><path d="${action.path}"/><circle cx="${directional ? 32 : 50}" cy="50" r="2" fill="currentColor" stroke="none"/></g>
       </svg>`;
     }
 
@@ -622,16 +1635,16 @@
         if (!quark || !anti || quark.color !== anti.color) return { valid: false, kind: '', analog: '' };
         const neutral = quark.flavor === anti.flavor;
         const sign = quark.flavor === 'u' ? '⁺' : '⁻';
-        const examples = neutral ? ['нейтральный пион π⁰ (компонент)', 'нейтральный ρ-мезон ρ⁰ (компонент)'] : [`пион π${sign}`, `ρ-мезон ρ${sign}`];
-        const note = neutral ? 'Пары uū и dd̄ входят в суперпозиции. Отдельная пара не определяет нейтральный мезон.' : '';
+        const examples = neutral ? [t('particle.neutralPion'), t('particle.neutralRho')] : [t('particle.pion', { sign }), t('particle.rho', { sign })];
+        const note = neutral ? t('particle.neutralNote') : '';
         return { valid: true, kind: 'meson', analog: examples.join(' / '), examples, note };
       }
       const sameKind = chosen.every(piece => piece.anti === chosen[0].anti);
       if (chosen.length !== 3 || !sameKind || new Set(chosen.map(piece => piece.color)).size !== 3) return { valid: false, kind: '', analog: '' };
       const up = chosen.filter(piece => piece.flavor === 'u').length;
       const examples = (chosen[0].anti
-        ? [['античастица Δ⁻, заряд +1 e'], ['антинейтрон', 'античастица Δ⁰, заряд 0 e'], ['антипротон', 'античастица Δ⁺, заряд −1 e'], ['античастица Δ⁺⁺, заряд −2 e']]
-        : [['Δ⁻'], ['нейтрон', 'Δ⁰'], ['протон', 'Δ⁺'], ['Δ⁺⁺']])[up];
+        ? [[t('particle.antiDeltaMinus')], [t('particle.antineutron'), t('particle.antiDeltaZero')], [t('particle.antiproton'), t('particle.antiDeltaPlus')], [t('particle.antiDeltaPlusPlus')]]
+        : [['Δ⁻'], [t('particle.neutron'), 'Δ⁰'], [t('particle.proton'), 'Δ⁺'], ['Δ⁺⁺']])[up];
       return { valid: true, kind: chosen[0].anti ? 'antibaryon' : 'baryon', analog: examples.join(' / '), examples, note: '' };
     }
 
@@ -642,26 +1655,24 @@
       return `<${tag} class="rune rune-${piece.anti ? 'reverse' : 'forward'} magnitude-${magnitude}" ${insideField ? '' : 'viewBox="0 0 48 54"'} aria-hidden="true" focusable="false">
         <g class="${insideField ? 'rune-etching' : 'rune-stone'}" transform="translate(24 26) scale(${size}) translate(-24 -26)">
           <path class="rune-frame" d="M24 2 44 14V38L24 50 4 38V14Z"/>
-          ${insideField || magnitude === 1 ? '' : '<path class="stone-face" d="M24 8 39 17V35L24 44 9 35V17Z"/>'}
           <path class="rune-glyph artifact-only" d="${families[piece.color].path}" transform="translate(0 1)"/>
           <text class="quark-glyph instrument-only" x="24" y="32">${piece.flavor || piece.color[0]}${piece.anti ? '\u0304' : ''}</text>
-          ${insideField ? '' : `<circle class="rune-mark" cx="${magnitude === 2 ? 21 : 24}" cy="46" r="1"/>${magnitude === 2 ? '<circle class="rune-mark" cx="27" cy="46" r="1"/>' : ''}`}
         </g>
       </${tag}>`;
     }
 
     function pieceName(piece) {
       if (document.documentElement.dataset.theme === 'artifact') {
-        return `${piece.anti ? 'Обратный' : 'Прямой'} знак ${families[piece.color].name}. ${piece.charge < 0 ? 'К себе' : 'От себя'}: ${Math.abs(piece.charge)}/3`;
+        return t(`piece.artifact.${piece.charge < 0 ? 'inward' : 'outward'}`, {
+          sign: t(`sign.${piece.color}.${piece.anti ? 'reverse' : 'forward'}`), magnitude: Math.abs(piece.charge)
+        });
       }
-      const color = `${piece.anti ? 'анти' : ''}${colorNames[piece.color]}`;
-      return `${color[0].toUpperCase() + color.slice(1)} ${piece.flavor}-${piece.anti ? 'антикварк' : 'кварк'}, заряд ${fractionText(piece.charge)} e`;
+      return t(`piece.${piece.color}.${piece.anti ? 'antiquark' : 'quark'}`, { flavor: piece.flavor, charge: fractionText(piece.charge) });
     }
 
     function runeDescription(piece) {
-      const size = Math.abs(piece.charge) === 2 ? 'Большой камень' : 'Малый камень';
-      if (document.documentElement.dataset.theme === 'artifact') return `${families[piece.color].label} · ${size}\n${pieceName(piece)}`;
-      return `${pieceName(piece)}\nАромат: ${piece.flavor === 'u' ? 'u (верхний)' : 'd (нижний)'}.\nРазмер значка обозначает модуль заряда, не массу.`;
+      if (document.documentElement.dataset.theme === 'artifact') return t(`rune.${Math.abs(piece.charge) === 2 ? 'large' : 'small'}`, { symbol: families[piece.color].label, name: pieceName(piece) });
+      return t(`rune.${piece.flavor}`, { name: pieceName(piece) });
     }
 
     const inspectSelector = '.piece[data-id], .socket[data-piece], .socket-target[data-insert], [data-inspect], .ability-card[data-ability]';
@@ -688,12 +1699,12 @@
         if (!ids) return;
         const info = abilityInfo(ids);
         const artifact = document.documentElement.dataset.theme === 'artifact';
-        text = artifact ? `${info.full}\n${info.action.detail}` : `${kindNames[analyzeCombination(ids).kind]} · заряд ${fractionText(totalThirds(ids))} e`;
-        text += '\n\nСостав:\n' + ids.map(id => pieceName(byId[id])).join('\n');
+        text = artifact ? `${info.full}\n${info.detail}` : t('tooltip.particle', { kind: kindNames[analyzeCombination(ids).kind], charge: fractionText(totalThirds(ids)) });
+        text += `\n\n${t('tooltip.composition')}\n` + ids.map(id => pieceName(byId[id])).join('\n');
         if (!artifact) {
           const result = analyzeCombination(ids);
           const formula = ids.map(id => byId[id]).sort((a, b) => Number(a.anti) - Number(b.anti) || b.flavor.localeCompare(a.flavor)).map(piece => piece.flavor + (piece.anti ? '\u0304' : '')).join('');
-          text += `\n\nВалентный состав: ${formula}\nПримеры частиц${result.note ? ' с таким компонентом' : ' с таким составом'}:\n`;
+          text += `\n\n${t('tooltip.valence', { formula })}\n${t(result.note ? 'tooltip.componentExamples' : 'tooltip.compositionExamples')}\n`;
           text += result.examples.map(name => `• ${name}`).join('\n');
           if (result.note) text += `\n\n${result.note}`;
         }
@@ -701,7 +1712,7 @@
         const id = target.dataset.id || target.dataset.piece || target.dataset.insert || target.dataset.inspect;
         if (!byId[id]) return;
         text = runeDescription(byId[id]);
-        if (reservedIds().includes(id)) text += '\nВ закреплённом составе.';
+        if (reservedIds().includes(id)) text += '\n' + t('tooltip.reserved');
       }
       const tooltip = $('runeTooltip');
       tooltip.textContent = text;
@@ -723,8 +1734,8 @@
     function renderPalette() {
       $('palette').innerHTML = colors.map(color => {
         const familyPieces = ['u', 'd', 'au', 'ad'].map(prefix => byId[`${prefix}-${color[0]}`]);
-        return `<div class="family ${color}"><div class="family-head" aria-hidden="true"><span>${families[color].roman}</span><span class="family-line"></span></div>
-          <div class="family-pieces">${familyPieces.map((piece, index) => `<div class="inventory-cell" data-order="${index}"><svg class="inventory-well" viewBox="0 0 48 54" aria-hidden="true"><path d="M24 2 44 14V38L24 50 4 38V14Z" transform="translate(24 26) scale(${Math.abs(piece.charge) === 2 ? 1 : .57}) translate(-24 -26)"/></svg><button class="piece ${color}" type="button" data-id="${piece.id}" aria-label="Добавить: ${pieceName(piece)}" aria-disabled="false">${runeHTML(piece)}<span class="piece-charge">${fractionText(piece.charge)}</span></button></div>`).join('')}</div></div>`;
+        return `<div class="family ${color}"><div class="family-head" aria-hidden="true"><svg class="family-symbol artifact-only" viewBox="8 6 32 36"><path d="${families[color].path}"/></svg><span class="instrument-only">${color[0]}</span><span class="family-line"></span></div>
+          <div class="family-pieces">${familyPieces.map((piece, index) => `<div class="inventory-cell" data-order="${index}"><svg class="inventory-well" viewBox="0 0 48 54" aria-hidden="true"><path d="M24 2 44 14V38L24 50 4 38V14Z" transform="translate(24 26) scale(${Math.abs(piece.charge) === 2 ? 1 : .57}) translate(-24 -26)"/></svg><button class="piece ${color}" type="button" data-id="${piece.id}" aria-label="${escapeHTML(t('piece.add', { name: pieceName(piece) }))}" aria-disabled="false">${runeHTML(piece)}<span class="piece-charge">${fractionText(piece.charge)}</span></button></div>`).join('')}</div></div>`;
       }).join('');
       $('palette').addEventListener('click', event => {
         const button = event.target.closest('[data-id]');
@@ -755,24 +1766,25 @@
         const indices = slots.flatMap((id, index) => id && byId[id].color === color && byId[id].anti === anti ? [index] : []);
         const sockets = (indices.length ? indices : [null]).map(index => {
           const piece = index === null ? null : byId[slots[index]];
-          const axisName = artifact ? `${anti ? 'Обратный' : 'Прямой'} знак ${families[color].name}` : `${anti ? 'Антицвет' : 'Цвет'}: ${colorNames[color]}`;
-          const label = piece ? `Убрать: ${pieceName(piece)}` : `${axisName}, гнездо свободно`;
+          const axisName = artifact ? t(`sign.${color}.${anti ? 'reverse' : 'forward'}`) : t(anti ? 'axis.anticolor' : 'axis.color', { color: colorNames[color] });
+          const label = piece ? t('piece.remove', { name: pieceName(piece) }) : t('axis.empty', { axis: axisName });
           const content = piece ? runeHTML(piece) + '<span class="socket-remove" aria-hidden="true">×</span>'
             : `<svg class="socket-ghost" viewBox="0 0 48 54" aria-hidden="true">${runeHTML({ color, anti, charge: 2 }, true)}</svg>`;
           const targets = piece ? '' : ['u', 'd'].map(flavor => {
             const candidate = byId[`${anti ? 'a' : ''}${flavor}-${color[0]}`];
             const large = flavor === 'u';
-            return `<button class="socket-target socket-target-${large ? 'large' : 'small'}" type="button" data-insert="${candidate.id}" ${count === slots.length || reservedIds().includes(candidate.id) ? 'disabled' : ''} aria-label="Добавить ${artifact ? `${large ? 'большой' : 'малый'} камень: ` : ''}${pieceName(candidate)}"></button>`;
+            const addLabel = t(artifact ? (large ? 'piece.addLarge' : 'piece.addSmall') : 'piece.addComponent', { name: pieceName(candidate) });
+            return `<button class="socket-target socket-target-${large ? 'large' : 'small'}" type="button" data-insert="${candidate.id}" ${count === slots.length || reservedIds().includes(candidate.id) ? 'disabled' : ''} aria-label="${escapeHTML(addLabel)}"></button>`;
           }).join('');
           const tag = piece ? 'button' : 'div';
-          return `<${tag} class="socket ${piece ? 'filled' : `empty ${valid ? 'optional' : ''}`}" ${piece ? `type="button" data-slot="${index}" data-piece="${piece.id}" data-size="${Math.abs(piece.charge) === 2 ? 'large' : 'small'}"` : 'role="group"'} aria-label="${label}">
+          return `<${tag} class="socket ${piece ? 'filled' : `empty ${valid ? 'optional' : ''}`}" ${piece ? `type="button" data-slot="${index}" data-piece="${piece.id}" data-size="${Math.abs(piece.charge) === 2 ? 'large' : 'small'}"` : 'role="group"'} aria-label="${escapeHTML(label)}">
             <span class="socket-face"><svg class="socket-outlines" viewBox="0 0 76 82" aria-hidden="true"><path class="socket-outline-large" d="M38 3 71 22V60L38 79 5 60V22Z"/><path class="socket-outline-small" d="M38 3 71 22V60L38 79 5 60V22Z" transform="translate(38 41) scale(.57) translate(-38 -41)"/></svg>${content}<svg class="socket-highlight" viewBox="0 0 76 82" aria-hidden="true"><path d="M38 3 71 22V60L38 79 5 60V22Z"/></svg></span>
             ${piece ? `<span class="piece-charge">${fractionText(piece.charge)}</span>` : targets}</${tag}>`;
         }).join('');
         return `<div class="orbit-slot axis-node ${color} ${indices.length ? 'active' : ''} ${indices.length > 1 ? 'multiple' : ''}" data-axis="${color}-${anti}" style="left:${x / 640 * 100}%;top:${y / 600 * 100}%">${sockets}</div>`;
       })).join('');
-      $('slotCount').textContent = artifact ? `${count} / 3 камня` : `Компоненты: ${count} / 3`;
-      const capacityLabel = `Свободно мест: ${slots.length - count} из ${slots.length}`;
+      $('slotCount').textContent = t(`slots.count.${artifact ? 'artifact' : 'instrument'}`, { count });
+      const capacityLabel = t('slots.capacity', { free: slots.length - count, total: slots.length });
       $('capacity').setAttribute('aria-label', capacityLabel);
       $('capacity').title = capacityLabel;
       [...$('capacity').children].forEach((dot, index) => dot.classList.toggle('spent', index < count));
@@ -780,7 +1792,7 @@
       const reserved = reservedIds();
       const free = pieces.length - count - reserved.length;
       $('inventoryCount').textContent = `${free} / ${pieces.length}`;
-      $('inventoryCount').setAttribute('aria-label', `${artifact ? 'Свободных камней' : 'Доступных кварков и антикварков'}: ${free} из ${pieces.length}. Закреплено: ${reserved.length}.`);
+      $('inventoryCount').setAttribute('aria-label', t(`inventory.${artifact ? 'artifact' : 'instrument'}`, { free, total: pieces.length, reserved: reserved.length }));
       document.querySelectorAll('.piece').forEach(button => {
         const taken = slots.includes(button.dataset.id) || reserved.includes(button.dataset.id);
         const cell = button.parentElement;
@@ -790,14 +1802,14 @@
           cell.dataset.inspect = button.dataset.id;
           cell.tabIndex = 0;
           cell.setAttribute('role', 'img');
-          cell.setAttribute('aria-label', `${pieceName(byId[button.dataset.id])}. В закреплённом составе.`);
+          cell.setAttribute('aria-label', t('piece.reserved', { name: pieceName(byId[button.dataset.id]) }));
         } else {
           delete cell.dataset.inspect;
           cell.removeAttribute('tabindex');
           cell.removeAttribute('role');
           cell.removeAttribute('aria-label');
         }
-        button.setAttribute('aria-label', `Добавить: ${pieceName(byId[button.dataset.id])}`);
+        button.setAttribute('aria-label', t('piece.add', { name: pieceName(byId[button.dataset.id]) }));
         button.classList.toggle('in-use', taken);
         button.disabled = taken;
         button.setAttribute('aria-disabled', String(taken || count === 3));
@@ -807,19 +1819,20 @@
 
     function renderAbilities() {
       const artifact = document.documentElement.dataset.theme === 'artifact';
-      $('abilitiesTitle').textContent = artifact ? 'Панель способностей' : 'Собранные состояния';
-      $('abilityNote').textContent = artifact ? 'Закрепи готовую печать. Её руны останутся заняты до разбора.' : 'Сохрани сочетание. Его компоненты останутся заняты до разбора.';
+      $('abilitiesTitle').textContent = t(`abilities.${artifact ? 'artifact' : 'instrument'}`);
+      $('releaseAll').textContent = t(`releaseAll.${artifact ? 'artifact' : 'instrument'}`);
+      $('releaseAll').disabled = !abilities.some(Boolean);
       $('abilityCount').textContent = `${abilities.filter(Boolean).length} / 6`;
       $('abilityBar').innerHTML = abilities.map((ids, index) => {
-        if (!ids) return `<li class="ability-slot empty" aria-label="Свободное место ${index + 1}"><span aria-hidden="true">${String(index + 1).padStart(2, '0')}</span></li>`;
+        if (!ids) return `<li class="ability-slot empty" aria-label="${escapeHTML(t('ability.freeSlot', { index: index + 1 }))}"><span aria-hidden="true">${String(index + 1).padStart(2, '0')}</span></li>`;
         const info = abilityInfo(ids);
         const physical = `${kindNames[analyzeCombination(ids).kind]} · ${fractionText(totalThirds(ids))} e`;
-        return `<li class="ability-slot filled"><button type="button" class="ability-card" data-ability="${index}" aria-label="${artifact ? info.full : physical}. Показать состав">
-          ${artifact ? sealIcon(ids) : compositionIcon(ids)}<span class="ability-label">${artifact ? info.label : physical}</span><span class="ability-size">${ids.length} ${artifact ? 'руны' : 'компонента'}</span></button>
-          <button class="ability-remove" type="button" data-release="${index}" aria-label="Разобрать: ${artifact ? info.full : physical}">×</button></li>`;
+        return `<li class="ability-slot filled"><button type="button" class="ability-card" data-ability="${index}" aria-label="${escapeHTML(t('ability.inspect', { name: artifact ? info.full : physical }))}">
+          ${artifact ? sealIcon(ids) : compositionIcon(ids)}<span class="ability-label">${escapeHTML(artifact ? info.label : physical)}</span></button>
+          <button class="ability-remove" type="button" data-release="${index}" aria-label="${escapeHTML(t('ability.release', { name: artifact ? info.full : physical }))}">×</button></li>`;
       }).join('');
       $('bindSeal').hidden = !analyzeCombination().valid;
-      $('bindSeal').textContent = artifact ? 'Закрепить печать' : 'Сохранить сочетание';
+      $('bindSeal').textContent = t(`bind.${artifact ? 'artifact' : 'instrument'}`);
     }
 
     function bindSeal() {
@@ -828,20 +1841,22 @@
       if (index < 0 || !analyzeCombination(ids).valid || ids.some(id => reservedIds().includes(id))) return;
       abilities[index] = [...ids];
       slots = [null, null, null];
-      $('cycleNote').textContent = '';
+      setMessage('cycleNote');
       stopVoices();
       render();
       const card = $('abilityBar').querySelector(`[data-ability="${index}"]`);
-      $('announcement').textContent = `Сохранено: ${card.querySelector('.ability-label').textContent}. Компоненты закреплены.`;
+      setMessage('announcement', 'ability.saved', () => ({ name: document.documentElement.dataset.theme === 'artifact'
+        ? abilityInfo(ids).label : `${kindNames[analyzeCombination(ids).kind]} · ${fractionText(totalThirds(ids))} e` }));
       card.focus({ preventScroll: pointerFocus });
     }
 
-    function releaseAbility(index) {
-      const ids = abilities[index];
-      if (!ids) return;
-      abilities[index] = null;
+    function releaseAbility(index = null) {
+      const ids = index === null ? reservedIds() : abilities[index];
+      if (!ids?.length) return;
+      if (index === null) abilities.fill(null);
+      else abilities[index] = null;
       render();
-      $('announcement').textContent = `Возвращено ${document.documentElement.dataset.theme === 'artifact' ? 'камней' : 'компонентов'}: ${ids.length}.`;
+      setMessage('announcement', `ability.returned.${document.documentElement.dataset.theme}`, { count: ids.length });
       document.querySelector(`.piece[data-id="${ids[0]}"]`).focus({ preventScroll: pointerFocus });
       clearPreview();
     }
@@ -871,18 +1886,31 @@
       frame = 0;
       const point = currentPosition(time);
       const valid = $('chamber').dataset.state === 'balanced';
+      const scientific = document.documentElement.dataset.theme === 'instrument';
       $('focus').setAttribute('transform', `translate(${point.x} ${point.y})`);
       strandElements.forEach(({ element, glow, anchor, index }) => {
         const dx = point.x - anchor.x;
         const dy = point.y - anchor.y;
         const length = Math.max(1, Math.hypot(dx, dy));
-        const wave = !motionPreference.matches && valid ? Math.sin(time * .003 + index * 2.1) * 4 : 0;
-        const bend = wave + (index - 1) * 5;
-        const path = `M${anchor.x} ${anchor.y}Q${(anchor.x + point.x) / 2 - dy / length * bend} ${(anchor.y + point.y) / 2 + dx / length * bend} ${point.x} ${point.y}`;
+        let path = `M${anchor.x} ${anchor.y}`;
+        if (scientific) {
+          const amplitude = motionPreference.matches ? 0 : Math.min(4, 1.8 + length * .012);
+          for (let step = 1; step <= 12; step++) {
+            const u = step / 12;
+            const wave = Math.sin(Math.PI * u) * Math.sin(time * .07 + index * 2.1)
+              + Math.sin(2 * Math.PI * u) * Math.sin(time * .11 + index * 2.1) * .22;
+            const offset = step === 12 ? 0 : amplitude * wave;
+            path += `L${anchor.x + dx * u - dy / length * offset} ${anchor.y + dy * u + dx / length * offset}`;
+          }
+        } else {
+          const wave = !motionPreference.matches && valid ? Math.sin(time * .003 + index * 2.1) * 4 : 0;
+          const bend = wave + (index - 1) * 5;
+          path += `Q${(anchor.x + point.x) / 2 - dy / length * bend} ${(anchor.y + point.y) / 2 + dx / length * bend} ${point.x} ${point.y}`;
+        }
         element.setAttribute('d', path);
         glow.setAttribute('d', path);
       });
-      if (!document.hidden && !motionPreference.matches && (point.moving || valid)) frame = requestAnimationFrame(animateField);
+      if (!document.hidden && !motionPreference.matches && (point.moving || valid || (scientific && strandElements.length))) frame = requestAnimationFrame(animateField);
     }
 
     function renderField(result) {
@@ -926,18 +1954,20 @@
       $('chargeFill').style.left = `${Math.min(50, pct)}%`;
       $('chargeFill').style.width = `${Math.abs(pct - 50)}%`;
       $('readout').dataset.balanced = String(result.valid);
+      $('stateName').textContent = result.valid ? kindNames[result.kind] : '';
+      $('stateName').hidden = !result.valid;
       const info = result.valid ? abilityInfo(slots.filter(Boolean)) : null;
       $('abilityPreview').innerHTML = info ? sealIcon(slots.filter(Boolean)) : '';
-      $('abilityName').textContent = info ? info.label : 'Печать не собрана';
-      $('abilityDetail').textContent = info ? `${info.small ? 'Малая' : 'Большая'} печать. ${info.action.detail}` : 'Приведи знаки в равновесие.';
+      $('abilityName').textContent = info ? t(`action.${info.action.id}.${info.small ? 'smallSeal' : 'seal'}`) : t('ability.empty');
+      $('abilityDetail').textContent = info ? info.detail : t('ability.hint');
       const count = slots.filter(Boolean).length;
       $('actionScale').dataset.ready = String(result.valid);
-      $('actionSteps').innerHTML = actions.map((action, index) => `<li class="action-step"${info?.action.id === action.id ? ' aria-current="true"' : ''}><span class="action-value">${fractionText((index - 2) * 3)}</span> <span class="action-name">${action.name}</span></li>`).join('');
+      $('actionSteps').innerHTML = actions.map((action, index) => `<li class="action-step"${info?.action.id === action.id ? ' aria-current="true"' : ''}><span class="action-value">${fractionText((index - 2) * 3)}</span> <span class="action-name">${escapeHTML(action.name)}</span></li>`).join('');
       $('actionMarker').hidden = $('actionFill').hidden = count === 0;
       $('actionMarker').style.top = `${pct}%`;
       $('actionFill').style.top = `${Math.min(50, pct)}%`;
       $('actionFill').style.height = `${Math.abs(pct - 50)}%`;
-      $('balanceValue').textContent = !count ? 'Нет кварков' : result.valid ? 'Скомпенсирован' : 'Не скомпенсирован';
+      $('balanceValue').textContent = t(!count ? 'balance.empty' : result.valid ? 'balance.ready' : 'balance.seeking');
       const raw = colors.map(color => slots.filter(Boolean).reduce((sum, id) => sum + (byId[id].color === color ? (byId[id].anti ? -1 : 1) : 0), 0));
       // Remove the shared component: three equal colour counts also cancel.
       const mean = raw.reduce((sum, value) => sum + value, 0) / 3;
@@ -964,6 +1994,11 @@
         $(name).setAttribute('cy', y);
       }
       $('previewRing').style.display = analyzeCombination(future).valid ? '' : 'none';
+      const pct = (totalThirds(future) + 6) / 12 * 100;
+      $('actionPreview').style.top = `${pct}%`;
+      $('actionPreview').dataset.ready = String(analyzeCombination(future).valid);
+      $('chargePreview').style.left = `${pct}%`;
+      $('actionPreview').hidden = $('chargePreview').hidden = false;
       document.querySelectorAll('[data-axis]').forEach(node => {
         if (node.dataset.axis === `${piece.color}-${piece.anti}`) node.dataset.previewSize = Math.abs(piece.charge) === 2 ? 'large' : 'small';
         else delete node.dataset.previewSize;
@@ -972,10 +2007,11 @@
 
     function clearPreview() {
       $('preview').setAttribute('hidden', '');
+      $('actionPreview').hidden = $('chargePreview').hidden = true;
       document.querySelectorAll('[data-preview-size]').forEach(node => delete node.dataset.previewSize);
     }
 
-    function render({ audible = false, added = null } = {}) {
+    function render({ audible = false, added = null, localeOnly = false } = {}) {
       hideTooltip();
       clearPreview();
       if (audible) stopVoices();
@@ -985,18 +2021,22 @@
       const state = !count ? 'empty' : result.valid ? 'balanced' : 'seeking';
       $('chamber').dataset.state = state;
       const artifact = document.documentElement.dataset.theme === 'artifact';
-      $('resultTitle').textContent = !count ? 'Всё начинается с касания' : result.valid ? (artifact ? abilityInfo(slots.filter(Boolean)).label : 'Связь замкнулась') : count === 1 ? 'Первый отклик' : 'В поиске равновесия';
-      $('resultDetail').textContent = !count ? 'Выбери любое начертание' : result.valid ? (artifact ? `${count === 2 ? 'Малая' : 'Большая'} печать завершена` : `${count === 2 ? 'Два' : 'Три'} знака · общий центр · заряд ${fractionText(n)}`) : count === 1 ? 'Каждый знак меняет целое' : count === 2 ? 'Продолжи сочетание или замени знак' : 'Убери один знак, чтобы попробовать другой';
+      $('resultTitle').textContent = !count ? t('result.empty.artifact') : result.valid ? abilityInfo(slots.filter(Boolean)).label : t('ability.empty');
+      $('resultDetail').textContent = t(!count ? 'result.hint.artifact' : result.valid ? (count === 2 ? 'result.smallComplete' : 'result.largeComplete') : count === 1 ? 'result.one' : count === 2 ? 'result.two' : 'result.three');
       if (!artifact) {
-        $('resultTitle').textContent = !count ? 'Состав не выбран' : result.valid ? kindNames[result.kind] : 'Цвет не скомпенсирован';
-        $('resultDetail').textContent = !count ? 'Выбери кварк или антикварк' : `Компонентов: ${count} · электрический заряд ${fractionText(n)} e`;
+        $('resultTitle').textContent = !count ? t('result.empty.instrument') : result.valid ? kindNames[result.kind] : t('result.seeking.instrument');
+        $('resultDetail').textContent = !count ? t('result.hint.instrument') : t('result.components', { count, charge: fractionText(n) });
       }
-      $('physicalResult').textContent = result.valid ? `${kindNames[result.kind]}. Аналог по кварковому составу: ${result.analog}. Электрический заряд: ${fractionText(n)} e. Масса и спин здесь не определяются.` : !count ? 'За начертаниями скрываются кварки и антикварки.' : 'Цветовые заряды ещё не скомпенсированы. Замкнутая пара соответствует мезону, тройка — бариону или антибариону.';
-      $('fieldDescription').textContent = `${artifact ? 'Рун' : 'Кварков и антикварков'}: ${count}. ${!count ? 'Круг пуст.' : result.valid ? 'Центр достигнут.' : 'Фокус смещён от центра.'} ${artifact ? (result.valid ? abilityInfo(slots.filter(Boolean)).full : 'Печать не собрана.') : `Электрический заряд ${fractionText(n)} e.`}`;
+      $('physicalResult').textContent = result.valid ? t('science.result', { kind: kindNames[result.kind], analog: result.analog, charge: fractionText(n) }) : t(!count ? 'science.intro' : 'science.seeking');
+      $('fieldDescription').textContent = [t(`field.count.${artifact ? 'artifact' : 'instrument'}`, { count }),
+        t(!count ? 'field.empty' : result.valid ? 'field.centered' : 'field.offset'),
+        artifact ? (result.valid ? abilityInfo(slots.filter(Boolean)).full : t('field.unfinished')) : t('field.charge', { charge: fractionText(n) })].join(' ');
       renderSlots();
       renderReadout(result);
-      renderField(result);
+      if (!localeOnly) renderField(result);
       renderAbilities();
+      // Text refreshes must not touch live oscillators, focus motion, or arrival effects.
+      if (localeOnly) return;
       const key = slots.filter(Boolean).slice().sort().join('|');
       clearTimeout(arrivalTimer);
       $('chamber').classList.remove('arrived');
@@ -1004,8 +2044,9 @@
         void $('chamber').offsetWidth;
         $('chamber').classList.add('arrived');
         arrivalTimer = setTimeout(() => $('chamber').classList.remove('arrived'), 1000);
-        if (audible) playSound(result);
-      } else if (audible && added) playSound(null, added);
+        if (audible && artifact) playSound(result);
+      } else if (audible && added && artifact) playSound(null, added);
+      syncStringSound();
       previousKey = key;
     }
 
@@ -1013,15 +2054,15 @@
       if (!byId[id] || slots.includes(id) || reservedIds().includes(id)) return;
       const index = slots.indexOf(null);
       if (index < 0) {
-        $('announcement').textContent = document.documentElement.dataset.theme === 'artifact' ? 'В круге уже три камня. Убери один, чтобы добавить другой.' : 'В составе уже три компонента. Убери один, чтобы добавить другой.';
+        setMessage('announcement', `slots.full.${document.documentElement.dataset.theme}`);
         return;
       }
       const source = document.querySelector(`.piece[data-id="${id}"]`);
       const from = source.querySelector('.rune').getBoundingClientRect();
       const moveFocus = document.activeElement === source || document.activeElement?.getAttribute('data-insert') === id;
       slots[index] = id;
-      $('cycleNote').textContent = '';
-      $('announcement').textContent = '';
+      setMessage('cycleNote');
+      setMessage('announcement');
       render({ audible: true, added: byId[id] });
       const socket = $('slots').querySelector(`[data-slot="${index}"]`);
       animateTransfer(byId[id], from, socket.querySelector('.rune').getBoundingClientRect());
@@ -1032,7 +2073,7 @@
       const removed = slots[index];
       const from = $('slots').querySelector(`[data-slot="${index}"] .rune`).getBoundingClientRect();
       slots[index] = null;
-      $('cycleNote').textContent = '';
+      setMessage('cycleNote');
       render({ audible: true });
       const returned = document.querySelector(`.piece[data-id="${removed}"]`);
       returned.focus({ preventScroll: true });
@@ -1063,9 +2104,11 @@
     function randomRecipe(count) {
       const current = slots.filter(Boolean).slice().sort().join('|');
       const available = availableRecipes(count);
-      const alternatives = available.filter(ids => ids.slice().sort().join('|') !== current);
-      const candidates = alternatives.length ? alternatives : available;
-      if (!candidates.length) return;
+      const groups = actions.map((_, index) => available.filter(ids => totalThirds(ids) === (index - 2) * 3)).filter(group => group.length);
+      if (!groups.length) return;
+      const group = groups[Math.floor(Math.random() * groups.length)];
+      const alternatives = group.filter(ids => ids.slice().sort().join('|') !== current);
+      const candidates = alternatives.length ? alternatives : group;
       setRecipe(candidates[Math.floor(Math.random() * candidates.length)]);
     }
 
@@ -1073,8 +2116,8 @@
       if (!Array.isArray(ids) || ids.length < 2 || ids.length > 3 || new Set(ids).size !== ids.length || ids.some(id => !byId[id] || reservedIds().includes(id))) return;
       slots = [...ids];
       while (slots.length < 3) slots.push(null);
-      $('cycleNote').textContent = document.documentElement.dataset.theme === 'artifact' ? (ids.length === 2 ? 'Случайная пара' : 'Случайная тройка') : `Случайный состав: ${ids.length} компонента`;
-      $('announcement').textContent = '';
+      setMessage('cycleNote', document.documentElement.dataset.theme === 'artifact' ? (ids.length === 2 ? 'examples.randomPair' : 'examples.randomTriple') : 'examples.randomComposition', { count: ids.length });
+      setMessage('announcement');
       render({ audible: true });
     }
 
@@ -1088,22 +2131,76 @@
           const master = context.createGain();
           master.gain.value = .23;
           master.connect(context.destination);
-          audio = { context, master, voices: new Set() };
+          audio = { context, master, voices: new Set(), strings: new Set(), stringKey: '' };
         } catch { return null; }
       }
       if (audio.context.state === 'suspended') audio.context.resume().catch(() => {});
       return audio;
     }
 
-    function stopVoices() {
+    function stopVoices(voices = audio?.voices) {
       if (!audio) return;
       const now = audio.context.currentTime;
-      audio.voices.forEach(({ oscillator, gain }) => {
+      voices.forEach(({ oscillator, gain, vibrato }) => {
         gain.gain.cancelScheduledValues(now);
         gain.gain.setTargetAtTime(0, now, .008);
         oscillator.stop(now + .035);
+        vibrato?.stop(now + .035);
       });
-      audio.voices.clear();
+      voices.clear();
+    }
+
+    function syncStringSound() {
+      const count = slots.filter(Boolean).length;
+      const active = soundEnabled && !document.hidden && count && document.documentElement.dataset.theme === 'instrument';
+      if (!active) {
+        if (audio) { stopVoices(audio.strings); audio.stringKey = ''; }
+        return;
+      }
+      const engine = ensureAudio();
+      if (!engine) return;
+      const { valid, kind } = analyzeCombination();
+      const charge = totalThirds() / 3;
+      const key = valid ? `${kind}:${charge}` : `seeking-${count}`;
+      if (engine.stringKey === key) return;
+      stopVoices(engine.strings);
+      engine.stringKey = key;
+      const { context, master } = engine;
+      const now = context.currentTime;
+      // Particle type sets the intervals; each charge unit shifts the chord by two semitones.
+      const intervals = { meson: [0, 7, 12], baryon: [0, 4, 7], antibaryon: [0, 3, 7] };
+      const notes = valid
+        ? intervals[kind].map(semitones => 146.83 * Math.pow(2, (charge * 2 + semitones) / 12))
+        : [146.83, 155.56, 207.65].slice(0, Math.max(2, count));
+      notes.forEach((frequency, index) => {
+        const oscillator = context.createOscillator();
+        const filter = context.createBiquadFilter();
+        const gain = context.createGain();
+        const vibrato = context.createOscillator();
+        const depth = context.createGain();
+        oscillator.type = 'triangle';
+        oscillator.frequency.value = frequency;
+        filter.type = 'lowpass';
+        filter.frequency.value = 1000;
+        filter.Q.value = .7;
+        vibrato.frequency.value = 1.27 + index * .1;
+        depth.gain.value = valid ? .6 : 1.8;
+        vibrato.connect(depth);
+        depth.connect(oscillator.frequency);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.setTargetAtTime(valid ? .034 : .022, now, .08);
+        oscillator.connect(filter);
+        filter.connect(gain);
+        gain.connect(master);
+        const voice = { oscillator, gain, vibrato };
+        engine.strings.add(voice);
+        oscillator.onended = () => {
+          oscillator.disconnect(); filter.disconnect(); gain.disconnect(); vibrato.disconnect(); depth.disconnect();
+          engine.strings.delete(voice);
+        };
+        oscillator.start(now);
+        vibrato.start(now);
+      });
     }
 
     function playSound(result, piece) {
@@ -1133,26 +2230,47 @@
       });
     }
 
-    function setTheme(theme) {
-      document.documentElement.dataset.theme = theme;
-      const title = theme === 'artifact' ? 'Равновесие' : 'Цветовой баланс';
+    function renderLabels() {
+      const theme = document.documentElement.dataset.theme;
+      document.querySelectorAll('[data-i18n]').forEach(node => { node.textContent = t(node.dataset.i18n); });
+      document.querySelectorAll('[data-i18n-aria]').forEach(node => { node.setAttribute('aria-label', t(node.dataset.i18nAria)); });
+      const title = t(`app.${theme}`);
       document.querySelector('h1').textContent = title;
       document.title = `${title} · QCD`;
       document.querySelectorAll('[data-theme-choice]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.themeChoice === theme)));
-      $('fieldLabel').textContent = theme === 'artifact' ? 'Алхимический круг' : 'Цветовая диаграмма';
+      for (const [id, key] of Object.entries({ fieldLabel: 'field', fieldTitle: 'fieldTitle', libraryTitle: 'library', forwardLabel: 'forward', reverseLabel: 'reverse', libraryNote: 'libraryNote', scienceSummary: 'scienceSummary', editionLabel: 'edition' })) {
+        $(id).textContent = t(`${key}.${theme}`);
+      }
       $('chamber').setAttribute('aria-label', $('fieldLabel').textContent);
-      $('fieldTitle').textContent = theme === 'artifact' ? 'Баланс трёх символов и их противоположностей' : 'Диаграмма цветовых зарядов';
-      $('slots').setAttribute('aria-label', theme === 'artifact' ? 'Камни на круге, не больше трёх одновременно' : 'Текущий состав: до трёх кварков или антикварков');
-      $('libraryTitle').textContent = theme === 'artifact' ? 'Инвентарь' : 'Кварки и антикварки';
-      $('forwardLabel').textContent = theme === 'artifact' ? 'Прямые' : 'Кварки';
-      $('reverseLabel').textContent = theme === 'artifact' ? 'Обратные' : 'Антикварки';
-      $('libraryNote').textContent = theme === 'artifact' ? 'Коснись камня, чтобы поместить в слот.' : 'Выбери компонент для текущего состава.';
-      $('scienceSummary').textContent = theme === 'artifact' ? 'Что скрыто внутри' : 'О кварковой модели';
-      document.querySelectorAll('.family-head > span:first-child').forEach((label, index) => {
-        label.textContent = theme === 'artifact' ? families[colors[index]].roman : colors[index][0];
-      });
-      $('cycleNote').textContent = '';
-      $('editionLabel').textContent = theme === 'artifact' ? '01 · АЛХИМИЯ' : '02 · КВАРКОВАЯ МОДЕЛЬ';
+      $('slots').setAttribute('aria-label', t(`slots.${theme}`));
+      $('toggleSound').setAttribute('aria-label', t(soundEnabled ? 'sound.onLabel' : 'sound.offLabel'));
+      $('soundLabel').textContent = t(soundEnabled ? 'sound.on' : 'sound.off');
+    }
+
+    function renderLanguage() {
+      const selectorFor = node => {
+        if (!node) return null;
+        if (node.id) return `#${CSS.escape(node.id)}`;
+        const attribute = ['data-id', 'data-piece', 'data-insert', 'data-inspect', 'data-ability', 'data-release'].find(name => node.hasAttribute(name));
+        return attribute ? `[${attribute}="${CSS.escape(node.getAttribute(attribute))}"]` : null;
+      };
+      const focused = selectorFor(document.activeElement);
+      const inspected = selectorFor(tooltipTarget);
+      cancelPress();
+      document.documentElement.lang = language;
+      $('languageSelect').value = languageChoice;
+      renderLabels();
+      render({ localeOnly: true });
+      messages.forEach(({ key, params }, id) => setMessage(id, key, params));
+      if (focused) document.querySelector(focused)?.focus({ preventScroll: true });
+      if (inspected) showTooltip(document.querySelector(inspected));
+    }
+
+    function setTheme(theme) {
+      stopVoices();
+      document.documentElement.dataset.theme = theme;
+      renderLabels();
+      setMessage('cycleNote');
       render();
       try { localStorage.setItem('qcd-theme', theme); } catch { /* File URLs may disallow storage. */ }
     }
@@ -1165,6 +2283,7 @@
     }
 
     document.querySelectorAll('[data-theme-choice]').forEach(button => button.addEventListener('click', () => setTheme(button.dataset.themeChoice)));
+    $('languageSelect').addEventListener('change', event => setLanguage(event.target.value));
     document.addEventListener('pointerover', event => {
       if (event.pointerType !== 'mouse') return;
       if ($('runeTooltip').contains(event.target)) { clearTimeout(tooltipHideTimer); return; }
@@ -1252,6 +2371,7 @@
     $('next2').addEventListener('click', () => randomRecipe(2));
     $('next3').addEventListener('click', () => randomRecipe(3));
     $('bindSeal').addEventListener('click', bindSeal);
+    $('releaseAll').addEventListener('click', () => releaseAbility());
     $('abilityBar').addEventListener('click', event => {
       const button = event.target.closest('[data-release]');
       if (button) releaseAbility(Number(button.dataset.release));
@@ -1263,21 +2383,22 @@
     $('reset').addEventListener('click', () => {
       slots = [null, null, null];
       document.querySelectorAll('.stone-flight').forEach(node => node.remove());
-      $('cycleNote').textContent = '';
-      $('announcement').textContent = '';
+      setMessage('cycleNote');
+      setMessage('announcement');
       stopVoices();
       render();
     });
     $('toggleSound').addEventListener('click', () => {
       soundEnabled = !soundEnabled;
       $('toggleSound').setAttribute('aria-pressed', String(soundEnabled));
-      $('toggleSound').setAttribute('aria-label', soundEnabled ? 'Звук включён. Выключить звук' : 'Звук выключен. Включить звук');
-      $('soundLabel').textContent = soundEnabled ? 'Звук вкл' : 'Звук выкл';
+      $('toggleSound').setAttribute('aria-label', t(soundEnabled ? 'sound.onLabel' : 'sound.offLabel'));
+      $('soundLabel').textContent = t(soundEnabled ? 'sound.on' : 'sound.off');
       if (audio) {
         const now = audio.context.currentTime;
         audio.master.gain.cancelScheduledValues(now);
         audio.master.gain.setTargetAtTime(soundEnabled ? .23 : 0, now, .015);
       }
+      syncStringSound();
     });
     document.addEventListener('keydown', event => {
       pointerFocus = false;
@@ -1288,8 +2409,12 @@
         if (frame) cancelAnimationFrame(frame);
         frame = 0;
         stopVoices();
+        syncStringSound();
         if (audio) audio.context.suspend().catch(() => {});
-      } else if (!frame) animateField(performance.now());
+      } else {
+        syncStringSound();
+        if (!frame) animateField(performance.now());
+      }
     });
     motionPreference.addEventListener('change', () => {
       if (frame) cancelAnimationFrame(frame);
@@ -1300,6 +2425,8 @@
     fitWorkspace();
     renderPalette();
     renderDial();
+    renderLabels();
+    $('languageSelect').value = languageChoice;
     render();
     try {
       const saved = localStorage.getItem('qcd-theme');

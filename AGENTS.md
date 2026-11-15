@@ -2,6 +2,20 @@
 
 - Keep file inspection and changes inside this QCD project directory. Do not search parent directories or neighboring projects without explicit user approval.
 
+# Test Scope
+
+- During iteration, run the smallest relevant test selection. Do not run the full suite after every copy, styling, or isolated interaction change.
+- Use `node --test --test-name-pattern="test name or regex" tests/prototype.test.mjs` for individual checks. Include affected transitions and mode switches, not just the changed happy path.
+- Use `npm --cache ".npm-cache" run test:rules` for combination rules and core interaction.
+- Use `npm --cache ".npm-cache" run test:abilities` for seals, reservations, ability panels, and descriptions.
+- Use `npm --cache ".npm-cache" run test:ui` for vocabulary, the named scale, and touch inspection.
+- Use `npm --cache ".npm-cache" run test:layout` for seal geometry, focus synchronization, animation, and responsive layouts.
+- Use `npm --cache ".npm-cache" run test:history` for snapshots and gallery navigation. Skip this group when only the working prototype changes.
+- Use `npm --cache ".npm-cache" run test:i18n` for language selection, translations, localized layouts, and preserving state across language changes.
+- Run the full `npm --cache ".npm-cache" test` before a user-authorized commit and after broad changes whose impact crosses groups or is uncertain. Commit permission is still required separately.
+- Keep new tests in the appropriate named suite and update the npm group filters when suites are renamed or added, so no suite falls outside the grouped commands.
+- Report which selection ran; do not describe a focused pass as a full-suite pass. Check screenshots for visual changes when useful.
+
 # Prototype Version History
 
 - Edit `qcd_magic_prototype.html` for ongoing experiments. Let the user review changes before committing.

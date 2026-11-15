@@ -3,7 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/prototype.test.mjs tests/history.test.mjs"
+    "test": "node --test tests/prototype.test.mjs tests/localization.test.mjs tests/history.test.mjs",
+    "test:rules": "node --test --test-name-pattern=\"QCD rules and interaction\" tests/prototype.test.mjs",
+    "test:abilities": "node --test --test-name-pattern=\"Seals and reserved inventory|Ability panel combinations|Ability modes and descriptions\" tests/prototype.test.mjs",
+    "test:ui": "node --test --test-name-pattern=\"Scientific vocabulary and particle examples|Named alchemical scale|Touch rune inspection\" tests/prototype.test.mjs",
+    "test:layout": "node --test --test-name-pattern=\"Seal presentation and focus|Focus synchronization regressions|Responsive presentation\" tests/prototype.test.mjs",
+    "test:history": "node --test tests/history.test.mjs",
+    "test:i18n": "node --test tests/localization.test.mjs"
   },
   "devDependencies": {
     "playwright": "1.65.1"
