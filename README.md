@@ -8,7 +8,7 @@ The same rules have two presentations: **Alchemy**, where you assemble magical s
 
 This project started with a thought: gameplay is often about solving a problem, whether that means understanding a system, finding a useful combination, or working within constraints. Could a scientific theory provide the underlying system for that kind of play?
 
-Quantum chromodynamics seemed like an interesting challenge precisely because it is so mathematical and difficult to approach intuitively. The question became: **could a magic system make some of its structure understandable through interaction, without requiring the player to start with the equations?**
+Quantum chromodynamics seemed like an interesting challenge precisely because it is so mathematical and difficult to approach intuitively. The question became: **could a magic system make some of its underlying relationships understandable through interaction, without requiring the player to start with the equations?**
 
 The aim is to preserve meaningful scientific relationships while simplifying the model enough to explore by hand. In the alchemical presentation, symbols, spatial balance, motion, and sound provide feedback. Switching to Quark Model reveals the scientific interpretation of the same pieces and combinations.
 
@@ -20,47 +20,41 @@ This is a prototype for exploring that idea.
 
 Combine stones on an alchemical circle to complete seals. Three families of planetary signs stand for the three color charges; their reversed signs stand for anticolors. The resulting electric charge maps to five fictional actions: Compression, Attraction, Holding, Repulsion, and Dispersion.
 
-Completed seals can be placed in a six-slot ability panel. Their ingredients remain reserved until you dismantle them, so building a set of abilities becomes a small resource-allocation problem. The prototype just describes these abilities but does not implement them.
+Completed seals can be placed in a six-slot ability panel. Their ingredients remain reserved until you dismantle them, so building a set of abilities becomes a small resource-allocation problem.
 
 ### Quark Model
 
-Select the second presentation, **Quark Model**, to use the prototype as a simplified, interactive model of selected ideas from quantum chromodynamics rather than as a magic-system sandbox.
+Select the second presentation, **Quark Model**, to use the prototype as a simplified, interactive model of some ideas from quantum chromodynamics.
 
-- Explore up and down quarks and their antiquarks in three colors or anticolors.
-- Compare fractional electric charges and the total charge of a composition.
-- Assemble matching color-anticolor pairs, or triples containing all three colors or all three anticolors.
-- See how these combinations relate to mesons, baryons, and antibaryons.
-- Inspect examples of real particles with the corresponding valence-quark composition.
-
-Both presentations share the same state. Switching between them does not discard the current composition or the ingredients reserved in the panel.
+Both presentations share the same state. Switching to Quark Model reveals the quarks behind the chosen stones and the particle examples associated with their combinations.
 
 ## Try it
 
 [Explore QCD Alchemy in your browser](https://pak911.github.io/qcd-alchemy/). No download or installation required.
 
-1. Choose **Alchemy** or **Quark Model** at the top of the page.
-2. Select inventory pieces or empty sockets to add up to three components to the circle.
-3. Try a quark with an antiquark of matching color, or three quarks of different colors. Three antiquarks of different anticolors also form a valid combination.
-4. Inspect the result, then save the completed composition to the panel or remove pieces to try another one.
-5. Use the random pair and triple controls to discover examples. Dismantle saved compositions to recover their ingredients.
+1. Choose **Alchemy** at the top of the page.
+2. Tap a stone in the inventory to place it on the circle. Watch how it shifts the point of balance.
+3. Add a stone with the reversed sign from the same family to complete a small seal. For a larger seal, try three different families, using either all regular or all reversed signs.
+4. Save the completed seal to the panel. Its stones stay reserved until you dismantle it, so your next seal must use what remains.
+5. Try different stone sizes to discover different effects. Use the random pair and triple controls for examples, or dismantle a saved seal to free its stones.
+6. Switch to **Quark Model** to see the scientific interpretation of the same composition without starting over.
 
-Hover or focus a piece to inspect it; on touch screens, use a long press. Sound can be turned off.
+Hover or focus a stone to inspect it; on touch screens, use a long press. Sound can be turned off.
 
 The current prototype supports **English, Spanish, Brazilian Portuguese, Simplified Chinese, and Russian**, with automatic selection from the browser language and an English fallback. Language and presentation preferences are stored locally when browser storage is available. Compositions are session-only and reset on reload.
 
 ## What the model does and does not represent
 
-The prototype keeps the fractional electric charges of up/down quarks and antiquarks, distinguishes color from electric charge, and uses simplified rules for color-neutral quark-antiquark pairs and three-quark or three-antiquark combinations. An integer electric charge alone is not enough to make a valid combination.
+The prototype keeps the fractional electric charges of up/down quarks and antiquarks, distinguishes color from electric charge, and uses simplified rules for color-neutral quark-antiquark pairs and three-quark or three-antiquark combinations.
 
 Its scope is deliberately limited:
 
 - Only up/down flavors and their antiparticles are included, with one inventory piece for each flavor/color combination and a maximum of three pieces in an assembly.
-- Color is drawn as a two-dimensional balance diagram. This is a visual aid, not the full quantum description of color-singlet states.
-- There is no calculation of gluon dynamics, confinement, mass, energy, spin, or particle decay.
+- Color is drawn as a two-dimensional balance diagram.
 - A valence-quark composition does not uniquely identify a particle. The interface gives examples; neutral up-antiup and down-antidown pairs are described as components of superpositions, not complete neutral-meson identifications.
-- Magical effects, planetary associations, animated strings, and sounds are design metaphors, not physical predictions.
+- There is no calculation of gluon dynamics, confinement, mass, energy, spin, or particle decay.
 
-Use it to build intuition about a small set of combination rules, not to calculate experimental results or replace a treatment of QCD. For broader context, see [CERN's introduction to the Standard Model](https://home.cern/science/physics/standard-model).
+Use it to build intuition about a small set of combination rules, not replace a treatment of QCD. For broader context, see [CERN's introduction to the Standard Model](https://home.cern/science/physics/standard-model).
 
 ## Project structure
 

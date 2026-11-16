@@ -41,8 +41,8 @@ afterEach(async () => {
 });
 
 describe('Historical snapshots', () => {
-  it('lists eight stages with concise descriptions', () => {
-    assert.equal(versions.length, 8);
+  it('lists nine stages with concise descriptions', () => {
+    assert.equal(versions.length, 9);
     for (const version of versions) {
       assert.ok(version.changes.length >= 2 && version.changes.length <= 4);
     }
@@ -250,8 +250,14 @@ describe('History viewer', () => {
     assert.equal(await page.locator('#prototype').getAttribute('src'), '06-feedback-and-localization.html');
     await page.locator('#next').click();
     await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'living-manuscript');
-    assert.equal(await page.locator('#next').isDisabled(), true);
+    assert.equal(await page.locator('#next').isDisabled(), false);
     assert.equal(await page.locator('#prototype').getAttribute('src'), '07-living-manuscript.html');
+    await page.locator('#next').click();
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'seal-flow');
+    assert.equal(await page.locator('#next').isDisabled(), true);
+    assert.equal(await page.locator('#prototype').getAttribute('src'), '08-seal-flow.html');
+    await page.locator('#previous').click();
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'living-manuscript');
     await page.locator('#previous').click();
     await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'feedback-and-localization');
     await page.locator('#previous').click();
@@ -268,9 +274,9 @@ describe('History viewer', () => {
   });
 
   it('keeps the complete desktop composition visible in responsive overview frames', async () => {
-    await page.goto(`${historyURL}#living-manuscript`);
+    await page.goto(`${historyURL}#seal-flow`);
     const frame = page.frame({ name: 'prototype' });
-    await frame.waitForURL(pathToFileURL(path.join(archive, '07-living-manuscript.html')).href);
+    await frame.waitForURL(pathToFileURL(path.join(archive, '08-seal-flow.html')).href);
     for (const width of [320, 390, 768, 1440, 1920, 2560]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.waitForFunction(() => {
@@ -293,13 +299,13 @@ describe('History viewer', () => {
   });
 
   it('opens snapshots at full size and keeps the working prototype a separate link', async () => {
-    await page.goto(`${historyURL}#living-manuscript`);
-    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'living-manuscript');
+    await page.goto(`${historyURL}#seal-flow`);
+    await page.waitForFunction(() => document.querySelector('[aria-current="step"]')?.dataset.version === 'seal-flow');
     const opened = page.waitForEvent('popup');
     await page.locator('#openVersion').click();
     const snapshot = await opened;
     await snapshot.waitForLoadState();
-    assert.equal(snapshot.url(), pathToFileURL(path.join(archive, '07-living-manuscript.html')).href);
+    assert.equal(snapshot.url(), pathToFileURL(path.join(archive, '08-seal-flow.html')).href);
     assert.equal(await snapshot.locator('.orbit-slot').count(), 6);
     assert.equal(await snapshot.locator('.ability-slot').count(), 6);
     assert.equal(await snapshot.locator('#languageSelect option').count(), 6);

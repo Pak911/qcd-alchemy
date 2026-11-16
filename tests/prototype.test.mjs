@@ -49,6 +49,25 @@ async function socketPoint(target) {
 }
 
 describe('QCD rules and interaction', () => {
+  it('sounds stone removal through either the stone or its cross and honors mute', async () => {
+    for (const theme of ['artifact', 'instrument']) {
+      await page.locator(`[data-theme-choice="${theme}"]`).click();
+      for (const target of ['.socket.filled', '.socket.filled .socket-remove']) {
+        const voices = await page.evaluate(target => {
+          addPiece('u-r');
+          stopVoices();
+          document.querySelector(target).click();
+          return audio.voices.size;
+        }, target);
+        assert.equal(voices, 1);
+        assert.deepEqual(await selected(), [null, null, null]);
+      }
+    }
+    await page.locator('#toggleSound').click();
+    await page.evaluate(() => { addPiece('u-r'); document.querySelector('.socket.filled').click(); });
+    assert.equal(await page.evaluate(() => audio.voices.size), 0);
+  });
+
   it('opens directly from disk without a server or an initial success state', async () => {
     assert.equal(await page.title(), 'Равновесие · QCD');
     assert.equal(await page.locator('h1').textContent(), 'Равновесие');
@@ -199,11 +218,13 @@ describe('QCD rules and interaction', () => {
       }
       await piece('d-r').click();
       await piece('u-r').hover();
-      await checkHighlight('large');
+      assert.equal(await axis.getAttribute('data-preview-size'), null, 'A blocked large stone has no insertion preview');
+      assert.equal(await page.locator('#preview').isVisible(), false);
       await page.locator('#reset').click();
       await piece('u-r').click();
       await piece('d-r').hover();
-      await checkHighlight('small');
+      assert.equal(await axis.getAttribute('data-preview-size'), null, 'A blocked small stone has no insertion preview');
+      assert.equal(await page.locator('#preview').isVisible(), false);
       await page.locator('#reset').click();
     }
   });
@@ -276,18 +297,18 @@ describe('QCD rules and interaction', () => {
     assert.equal(await page.locator('#inventoryCount').textContent(), '11 / 12');
     await page.evaluate(() => addPiece('u-r'));
     assert.deepEqual(await selected(), ['u-r', null, null], 'The same stone cannot be used twice');
-    await piece('d-r').click();
+    await piece('d-b').click();
     await piece('u-g').click();
     assert.equal(await page.locator('#chargeValue').textContent(), '+1');
-    assert.equal(await state(), 'seeking');
+    assert.equal(await state(), 'balanced');
     // A real pointer can still press an aria-disabled control; exercise its guard.
-    await piece('u-b').click({ force: true });
-    assert.deepEqual(await selected(), ['u-r', 'd-r', 'u-g']);
+    await piece('au-b').click({ force: true });
+    assert.deepEqual(await selected(), ['u-r', 'd-b', 'u-g']);
     assert.notEqual(await page.locator('#announcement').textContent(), '');
     await page.locator('.socket[data-slot="1"]').click();
     assert.deepEqual(await selected(), ['u-r', null, 'u-g']);
-    assert.equal(await piece('d-r').isVisible(), true);
-    assert.equal(await piece('d-r').evaluate(button => document.activeElement === button), true);
+    assert.equal(await piece('d-b').isVisible(), true);
+    assert.equal(await piece('d-b').evaluate(button => document.activeElement === button), true);
     await piece('u-b').click();
     assert.deepEqual(await selected(), ['u-r', 'u-b', 'u-g']);
     assert.equal(await state(), 'balanced');
@@ -344,27 +365,31 @@ describe('QCD rules and interaction', () => {
     }
   });
 
-  it('keeps both magnitudes independently removable when they share a direction', async () => {
+  it('blocks the other magnitude on an occupied axis and restores it after removal or binding', async () => {
     for (const width of [320, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
-      await piece('u-r').click();
-      await piece('d-r').click();
-      const shared = page.locator('[data-axis="red-false"]');
-      assert.equal(await shared.locator('.socket.filled').count(), 2);
-      for (const id of ['u-r', 'd-r']) {
-        const button = page.locator(`.socket[data-piece="${id}"]`);
-        await button.scrollIntoViewIfNeeded();
-        const hit = await button.evaluate(node => {
-          const box = node.getBoundingClientRect();
-          return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.closest('[data-piece]')?.dataset.piece;
-        });
-        assert.equal(hit, id, 'Neither stone blocks the other click target');
+      for (const theme of ['artifact', 'instrument']) {
+        await page.locator(`[data-theme-choice="${theme}"]`).click();
+        for (const [id, blocked] of [['u-r', 'd-r'], ['d-r', 'u-r']]) {
+          await piece(id).click();
+          assert.equal(await piece(blocked).isVisible(), true);
+          assert.equal(await piece(blocked).isDisabled(), true);
+          assert.equal(await piece(blocked).evaluate(node => node.classList.contains('axis-blocked')), true);
+          await page.evaluate(blocked => { addPiece(blocked); showPreview(blocked); }, blocked);
+          assert.equal(await page.locator('#preview').isVisible(), false);
+          assert.equal(await page.locator('[data-axis="red-false"] .socket.filled').count(), 1);
+          const before = await selected();
+          await page.evaluate(() => setRecipe(['u-r', 'd-r']));
+          assert.deepEqual(await selected(), before);
+          const outline = Math.abs(await page.evaluate(id => byId[id].charge, id)) === 2 ? 'small' : 'large';
+          assert.equal(await page.locator(`.socket.filled .socket-outline-${outline}`).evaluate(node => getComputedStyle(node).display), 'none');
+          await page.locator(`.socket[data-piece="${id}"]`).click();
+          assert.equal(await piece(blocked).isEnabled(), true);
+        }
+        await page.evaluate(() => { setRecipe(['u-r', 'au-r']); bindSeal(); });
+        assert.equal(await piece('d-r').isEnabled(), true);
+        await page.locator('#releaseAll').click();
       }
-      assert.equal(await state(), 'seeking');
-      await page.locator('.socket[data-piece="u-r"]').click();
-      assert.equal(await shared.locator('.socket.filled').count(), 1);
-      assert.equal(await piece('u-r').isVisible(), true);
-      await page.locator('.socket[data-piece="d-r"]').click();
       assert.equal(await state(), 'empty');
     }
   });
@@ -536,7 +561,7 @@ describe('QCD rules and interaction', () => {
     assert.equal((await sound()).key, 'seeking-2');
     await piece('au-b').click();
     await page.locator('#bindSeal').click();
-    assert.deepEqual(await sound(), { key: '', tones: [], transients: 0 });
+    assert.deepEqual(await sound(), { key: '', tones: [], transients: 1 });
     await page.waitForFunction(() => {
       const samples = new Float32Array(window.soundProbe.fftSize);
       window.soundProbe.getFloatTimeDomainData(samples);
@@ -669,7 +694,7 @@ describe('Seals and reserved inventory', () => {
     await page.evaluate(() => setRecipe(['u-r', 'ad-g']));
     assert.equal(await page.locator('#chargeValue').textContent(), '+1');
     assert.equal(await page.locator('#bindSeal').isVisible(), false);
-    assert.equal(await page.locator('#abilityName').textContent(), 'Печать не собрана');
+    assert.equal(await page.locator('#abilityName').textContent(), 'Печать ещё не собрана');
     assert.equal(await page.locator('#alchemySeal [data-action]').count(), 0);
     await page.evaluate(() => bindSeal());
     assert.equal(await page.locator('.ability-slot.filled').count(), 0);
@@ -705,11 +730,100 @@ describe('Seals and reserved inventory', () => {
 });
 
 describe('Ability panel combinations', () => {
+  it('accepts real taps on both result icons and keyboard activation without a duplicate binding', async () => {
+    const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
+    const touchPage = await mobile.newPage();
+    touchPage.on('pageerror', error => errors.push(error.message));
+    try {
+      await touchPage.goto(url);
+      for (const theme of ['artifact', 'instrument']) {
+        await touchPage.locator(`[data-theme-choice="${theme}"]`).tap();
+        for (const id of ['sealHit', theme === 'artifact' ? 'abilityPreview' : 'compositionPreview']) {
+          await touchPage.evaluate(() => setRecipe(['u-r', 'au-r']));
+          await touchPage.locator(`#${id}`).tap();
+          assert.equal(await touchPage.locator('.ability-slot.filled').count(), 1);
+          assert.deepEqual(await touchPage.evaluate(() => slots), [null, null, null]);
+          await touchPage.locator('[data-release="0"]').tap();
+          assert.equal(await touchPage.locator('.piece:visible').count(), 12);
+        }
+      }
+    } finally {
+      await mobile.close();
+    }
+    await page.evaluate(() => setRecipe(['u-r', 'au-r']));
+    await page.locator('#sealHit').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.locator('.ability-slot.filled').count(), 1);
+    assert.equal(await page.locator('[data-ability="0"]').evaluate(node => node === document.activeElement), true);
+  });
+
+  it('binds from either result and flies every released stone home before enabling it', async () => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    for (const theme of ['artifact', 'instrument']) {
+      await page.locator(`[data-theme-choice="${theme}"]`).click();
+      for (const target of ['sealHit', theme === 'artifact' ? 'abilityPreview' : 'compositionPreview']) {
+        await page.evaluate(() => setRecipe(['u-r', 'au-r']));
+        if (theme === 'artifact') await page.waitForFunction(() => !$('readout').classList.contains('awaiting-result'));
+        assert.equal(await page.locator('#readout.arrived').count(), 1);
+        const preview = theme === 'artifact' ? '#abilityPreview' : '#compositionPreview';
+        assert.equal(await page.locator(`${preview} .seal-icon`).evaluate(node => getComputedStyle(node).animationName), 'result-awaken');
+        await page.evaluate(target => {
+          pointerFocus = true;
+          document.getElementById(target).click();
+          document.querySelector('.seal-flight').getAnimations()[0].pause();
+          bindSeal();
+        }, target);
+        assert.equal(await page.locator('.ability-slot.filled').count(), 1, 'Repeated binding cannot duplicate a seal');
+        assert.equal(await page.locator('.seal-flight').count(), 1);
+        assert.equal(await page.locator('.ability-card.arriving').count(), 1);
+        await page.evaluate(() => document.querySelector('.seal-flight').getAnimations()[0].finish());
+        await page.waitForFunction(() => !document.querySelector('.seal-flight'));
+        await page.evaluate(() => {
+          document.querySelector('[data-release="0"]').click();
+          document.querySelectorAll('.return-flight').forEach(node => node.getAnimations()[0].pause());
+        });
+        assert.equal(await page.locator('.return-flight').count(), 2);
+        assert.equal(await piece('u-r').isVisible(), false);
+        assert.equal(await piece('u-r').isDisabled(), true);
+        await page.evaluate(() => { addPiece('u-r'); setRecipe(['u-r', 'au-r']); });
+        assert.deepEqual(await selected(), [null, null, null], 'In-flight ingredients cannot be reused');
+        await page.evaluate(() => document.querySelectorAll('.return-flight').forEach(node => node.getAnimations()[0].finish()));
+        await page.waitForFunction(() => returningIds.size === 0);
+        assert.equal(await piece('u-r').isVisible(), true);
+        assert.equal(await piece('u-r').isEnabled(), true);
+        assert.equal(await page.locator('.return-flight').count(), 0);
+      }
+    }
+  });
+
+  it('finishes panel flights safely on mode changes and reduced motion, and honors mute', async () => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => { setRecipe(['u-r', 'au-r']); bindSeal(); });
+    await page.locator('[data-theme-choice="instrument"]').click();
+    assert.equal(await page.locator('.seal-flight').count(), 0);
+    assert.equal(await page.locator('.ability-card.arriving').count(), 0);
+    await page.evaluate(() => {
+      setRecipe(['u-g', 'au-g']); bindSeal();
+      finishTransfers(); stopVoices();
+      releaseAbility();
+      document.querySelectorAll('.return-flight').forEach(node => node.getAnimations()[0].pause());
+    });
+    assert.equal(await page.locator('.return-flight').count(), 4);
+    assert.equal(await page.evaluate(() => audio.voices.size), 1, 'Mass release plays one cue');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.waitForFunction(() => returningIds.size === 0);
+    assert.equal(await page.locator('.return-flight').count(), 0);
+    await page.locator('#toggleSound').click();
+    await page.evaluate(() => { stopVoices(); setRecipe(['d-r', 'ad-r']); bindSeal(); releaseAbility(); });
+    assert.equal(await page.evaluate(() => audio.voices.size), 0);
+    assert.equal(await page.locator('.piece:visible').count(), 12);
+  });
+
   it('releases all saved compositions in either mode without clearing the current circle', async () => {
     for (const theme of ['artifact', 'instrument']) {
       await page.locator(`[data-theme-choice="${theme}"]`).click();
       assert.equal(await page.locator('#releaseAll').isDisabled(), true);
-      assert.equal(await page.locator('#releaseAll').textContent(), theme === 'artifact' ? 'Разобрать все способности' : 'Разобрать все частицы');
+      assert.equal(await page.locator('#releaseAll').textContent(), theme === 'artifact' ? 'Разобрать все печати' : 'Разобрать все частицы');
       for (const ids of [['u-r', 'au-r'], ['u-g', 'au-g']]) {
         await page.evaluate(ids => setRecipe(ids), ids);
         await page.locator('#bindSeal').click();
@@ -767,7 +881,7 @@ describe('Ability panel combinations', () => {
         assert.ok(cards.every(card => card.fits), `Labels must fit at ${width}px in ${theme}`);
         assert.ok(cards.every(card => card.width <= 128.1 && card.height < 130), 'Slots stay compact instead of stretching across the page');
         const panel = await page.locator('.abilities').boundingBox();
-        const workbench = await page.locator('.workbench').boundingBox();
+        const workbench = await page.locator(width <= 680 ? '.shell' : '.workbench').boundingBox();
         assert.ok(Math.abs(panel.x + panel.width / 2 - workbench.x - workbench.width / 2) < 1, 'The compact panel is centered within the page');
         assert.ok(cards.every(card => card.icon === (width <= 680 ? 62 : 72) && card.gap === 2), 'Icons retain their size with tighter label spacing');
         if (width === 1440 || width === 390) await page.locator('.abilities').screenshot({ path: path.join(artifacts, `compact-panel-${theme}-${width}.png`) });
@@ -804,14 +918,14 @@ describe('Ability panel combinations', () => {
 describe('Ability modes and descriptions', () => {
   it('uses distinct approved descriptions for all eight seals in the readout and saved tooltips', async () => {
     const cases = [
-      [['au-r', 'au-g', 'au-b'], 'Спрессовывает вещество в плотный сгусток.'],
-      [['au-r', 'au-g', 'ad-b'], 'Резко тянет выбранный предмет к тебе.'],
-      [['u-r', 'd-g', 'd-b'], 'Обездвиживает выбранный предмет, фиксируя его на месте.'],
-      [['u-r', 'u-g', 'd-b'], 'Отбрасывает выбранный предмет от тебя.'],
-      [['u-r', 'u-g', 'u-b'], 'Разрушает цельную форму предмета, рассеивая его вещество вокруг.'],
-      [['d-r', 'au-r'], 'Слабо притягивает выбранный предмет к тебе.'],
-      [['u-r', 'au-r'], 'Сдерживает движение выбранного предмета.'],
-      [['u-r', 'ad-r'], 'Слабо отталкивает выбранный предмет от тебя.']
+      [['au-r', 'au-g', 'au-b'], 'Сжимает вещество в плотный сгусток.'],
+      [['au-r', 'au-g', 'ad-b'], 'Рывком притягивает предмет к тебе.'],
+      [['u-r', 'd-g', 'd-b'], 'Удерживает предмет неподвижно.'],
+      [['u-r', 'u-g', 'd-b'], 'Отбрасывает предмет от тебя.'],
+      [['u-r', 'u-g', 'u-b'], 'Разрушает предмет и рассеивает его вещество.'],
+      [['d-r', 'au-r'], 'Слегка притягивает предмет к тебе.'],
+      [['u-r', 'au-r'], 'Сдерживает движение предмета.'],
+      [['u-r', 'ad-r'], 'Слегка отталкивает предмет от тебя.']
     ];
     for (const [ids, detail] of cases) {
       await page.evaluate(ids => setRecipe(ids), ids);
@@ -878,7 +992,7 @@ describe('Ability modes and descriptions', () => {
     assert.equal(await tooltip.isVisible(), false);
     await piece('u-b').hover();
     assert.match(await tooltip.textContent(), /^Большой камень ☾\n/);
-    assert.match(await tooltip.textContent(), /Прямой знак Луны/);
+    assert.match(await tooltip.textContent(), /Знак Луны/);
     await piece('au-b').hover();
     assert.match(await tooltip.textContent(), /Обратный знак Луны/);
     await piece('u-g').focus();
@@ -1034,6 +1148,33 @@ describe('Seal presentation and focus', () => {
 });
 
 describe('Focus synchronization regressions', () => {
+  it('joins strands to the visible stone at either size on every axis and viewport', async () => {
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      for (const theme of ['artifact', 'instrument']) {
+        await page.locator(`[data-theme-choice="${theme}"]`).click();
+        const failures = await page.evaluate(() => {
+          const failures = [];
+          for (const piece of pieces) {
+            slots = [piece.id, null, null];
+            render();
+            const anchor = strandElements[0].anchor;
+            const point = new DOMPoint(anchor.x, anchor.y).matrixTransform($('field').getScreenCTM());
+            const frame = $('slots').querySelector(`[data-piece="${piece.id}"] .rune-frame`).getBoundingClientRect();
+            if (point.x < frame.left || point.x > frame.right || point.y < frame.top || point.y > frame.bottom) failures.push(piece.id);
+          }
+          slots = [null, null, null];
+          render();
+          return failures;
+        });
+        assert.deepEqual(failures, [], `${theme}/${width}: strands reach the visible stone, not the absent large outline`);
+      }
+    }
+    await page.locator('[data-theme-choice="artifact"]').click();
+    await page.evaluate(() => { addPiece('d-b'); addPiece('ad-r'); });
+    await page.locator('.field-wrap').screenshot({ path: path.join(artifacts, 'small-stone-strands.png') });
+  });
+
   it('appears at the first contribution without a path from the empty center and moves only between existing positions', async () => {
     for (const reducedMotion of ['no-preference', 'reduce']) {
       await page.emulateMedia({ reducedMotion });
@@ -1237,7 +1378,7 @@ describe('Scientific vocabulary and particle examples', () => {
   });
 
   it('keeps alchemy uncluttered and uses scientific labels throughout the other theme', async () => {
-    assert.equal(await page.locator('#resultTitle').textContent(), 'Помести камень на алхимический круг');
+    assert.equal(await page.locator('#resultTitle').textContent(), 'Помести камень в круг');
     assert.equal(await page.locator('#libraryNote').textContent(), 'Нажми на камень, чтобы добавить его в круг.');
     assert.equal(await page.locator('.family-symbol:visible').count(), 3);
     assert.deepEqual(await page.locator('.family-symbol path').evaluateAll(nodes => nodes.map(node => node.getAttribute('d'))),
@@ -1261,7 +1402,7 @@ describe('Scientific vocabulary and particle examples', () => {
     assert.equal(await page.locator('#slotCount').textContent(), 'Компоненты: 0 / 3');
     assert.equal(await page.locator('#balanceValue').textContent(), 'Нет кварков');
     assert.equal(await page.locator('#fieldLabel').textContent(), 'Цветовая диаграмма');
-    assert.equal(await page.locator('#resultTitle').textContent(), 'Состав не выбран');
+    assert.equal(await page.locator('#resultTitle').textContent(), 'Кварки пока не добавлены');
     assert.doesNotMatch(await page.locator('body').innerText(), /камня|камень|Нет знаков|Прямые|Обратные/);
     await piece('d-r').hover();
     assert.match(await page.locator('#runeTooltip').textContent(), /Красный d-кварк, заряд −1\/3 e/);
@@ -1273,12 +1414,12 @@ describe('Scientific vocabulary and particle examples', () => {
     await page.locator('[data-theme-choice="artifact"]').click();
     assert.equal(await page.locator('#balanceValue').isVisible(), false);
     assert.equal(await page.locator('.palette-labels').isVisible(), false);
-    assert.equal(await page.locator('#slotCount').textContent(), '1 / 3 камня');
+    assert.equal(await page.locator('#slotCount').textContent(), 'Камни: 1 / 3');
     assert.equal(await page.locator('.family-symbol:visible').count(), 3);
-    assert.equal(await page.locator('#resultTitle').textContent(), 'Печать не собрана');
+    assert.equal(await page.locator('#resultTitle').textContent(), 'Печать ещё не собрана');
     assert.equal(await page.locator('#resultDetail').textContent(), 'Добавь ещё один камень');
     await page.locator('#reset').click();
-    assert.equal(await page.locator('#resultTitle').textContent(), 'Помести камень на алхимический круг');
+    assert.equal(await page.locator('#resultTitle').textContent(), 'Помести камень в круг');
   });
 
   it('lists particles after ingredients, qualifies neutral mixtures, and hides examples in alchemy', async () => {
@@ -1301,7 +1442,7 @@ describe('Scientific vocabulary and particle examples', () => {
       await page.evaluate(ids => { setRecipe(ids); bindSeal(); }, entry.ids);
       await page.locator('[data-ability="0"]').click();
       const text = await page.locator('#runeTooltip').textContent();
-      assert.ok(text.includes(`Валентный состав: ${entry.formula}`));
+      assert.ok(text.includes(`Состав валентных кварков: ${entry.formula}`));
       for (const name of entry.examples) assert.ok(text.includes(`• ${name}`));
       assert.ok(text.indexOf('Состав:') < text.indexOf('Примеры частиц'));
       assert.doesNotMatch(text, /сопоставление по валентным ароматам|не определение частицы/);
@@ -1321,6 +1462,121 @@ describe('Scientific vocabulary and particle examples', () => {
 });
 
 describe('Named alchemical scale', () => {
+  it('sends light from the circle before revealing the result and discards interrupted feedback', async () => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => setRecipe(['u-r', 'u-g', 'u-b']));
+    assert.equal(await page.locator('#alchemySeal .seal-icon').isVisible(), true);
+    assert.equal(await page.locator('#abilityPreview').isVisible(), false);
+    assert.equal(await page.locator('.soul-flight').count(), 0, 'The center animation plays first');
+    await page.waitForSelector('.soul-flight[data-failed="false"]');
+    await page.waitForFunction(() => document.querySelectorAll('.soul-mote').length >= 12);
+    const trailSpread = await page.locator('.soul-mote').evaluateAll(nodes => {
+      const xs = nodes.map(node => parseFloat(node.style.left));
+      return Math.max(...xs) - Math.min(...xs);
+    });
+    assert.ok(trailSpread > 20, 'Particles stay distributed along the travelled route');
+    await page.evaluate(() => {
+      const animation = document.querySelector('.soul-flight').getAnimations()[0];
+      animation.pause();
+      animation.currentTime = 275;
+    });
+    assert.equal(await page.locator('#abilityPreview').isVisible(), false);
+    assert.equal(await page.locator('#alchemySeal .seal-icon').isVisible(), true, 'Only the light travels, not the central seal');
+    await page.screenshot({ path: path.join(artifacts, 'soul-transfer.png'), animations: 'allow' });
+    await page.evaluate(() => document.querySelector('.soul-flight').getAnimations()[0].finish());
+    await page.waitForFunction(() => !$('readout').classList.contains('awaiting-result'));
+    assert.equal(await page.locator('#abilityPreview').isVisible(), true);
+    assert.equal(await page.locator('#readout.arrived').count(), 1);
+    assert.equal(await page.locator('.soul-flight.dissolving').count(), 1, 'The arriving light overlaps the appearing seal');
+    await page.evaluate(() => { $('reset').click(); setRecipe(['u-r', 'u-g', 'au-b']); });
+    await page.waitForSelector('.soul-flight');
+    await page.evaluate(() => setTheme('instrument'));
+    assert.equal(await page.locator('.soul-flight').count(), 0);
+    assert.equal(await page.locator('#readout.awaiting-result, #readout.failed-pulse').count(), 0);
+    await page.evaluate(() => { setTheme('artifact'); $('reset').click(); setRecipe(['d-r', 'ad-r']); });
+    await page.waitForSelector('.soul-flight');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.waitForFunction(() => !document.querySelector('.soul-flight'));
+    assert.equal(await page.locator('#abilityPreview').isVisible(), true);
+    await page.locator('#reset').click();
+    assert.equal(await page.locator('#abilityPreview .seal-icon').count(), 0);
+  });
+
+  it('signals only a full failed alchemical attempt and recovers without losing stones', async () => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => { addPiece('u-r'); addPiece('u-g'); });
+    assert.equal(await page.locator('.failed-seal').count(), 0);
+    const scaleTop = await page.locator('#actionScale').evaluate(node => node.getBoundingClientRect().top);
+    const cue = await page.evaluate(() => {
+      addPiece('au-b');
+      return { voices: audio.voices.size, waiting: $('readout').classList.contains('awaiting-result') };
+    });
+    assert.deepEqual(cue, { voices: 0, waiting: true });
+    await page.waitForSelector('.soul-flight[data-failed="true"]');
+    assert.equal(await page.locator('#abilityPreview').isVisible(), false);
+    await page.waitForFunction(() => $('readout').classList.contains('failed-pulse'));
+    assert.equal(await page.evaluate(() => audio.voices.size), 2);
+    assert.equal(await page.locator('#abilityName').textContent(), 'Знаки не сошлись');
+    assert.equal(await page.locator('#abilityDetail').textContent(), 'Попробуй другой камень, чтобы уравновесить знаки.');
+    assert.equal(await page.locator('#abilityPreview').isDisabled(), true);
+    assert.equal(await page.locator('#bindSeal').isVisible(), false);
+    assert.equal(await page.locator('.failed-seal').evaluate(node => getComputedStyle(node).animationName), 'seal-falter');
+    assert.equal(await page.locator('#actionScale').evaluate(node => node.getBoundingClientRect().top), scaleTop);
+    await page.waitForFunction(() => !$('readout').classList.contains('failed-pulse'));
+    await page.locator('#languageSelect').selectOption('en');
+    assert.equal(await page.locator('.failed-seal').count(), 1);
+    assert.equal(await page.locator('#readout.failed-pulse').count(), 0);
+    assert.equal(await page.evaluate(() => audio.voices.size), 0);
+    await page.locator('.readout').screenshot({ path: path.join(artifacts, 'failed-seal-readout.png') });
+    await page.locator('[data-theme-choice="instrument"]').click();
+    assert.equal(await page.locator('.failed-seal').count(), 0);
+    assert.equal(await page.locator('#readout').getAttribute('data-unbalanced-full'), 'true');
+    const color = await page.locator('#balanceValue').evaluate(node => getComputedStyle(node).color);
+    assert.equal(await page.locator('#resultTitle').evaluate(node => getComputedStyle(node).color), color);
+    await page.locator('.socket[data-piece="au-b"]').click();
+    assert.equal(await page.locator('#readout').getAttribute('data-unbalanced-full'), 'false');
+    assert.notEqual(await page.locator('#balanceValue').evaluate(node => getComputedStyle(node).color), color);
+    assert.notEqual(await page.locator('#resultTitle').evaluate(node => getComputedStyle(node).color), color);
+    await page.locator('[data-theme-choice="artifact"]').click();
+    assert.equal(await page.locator('.failed-seal').count(), 0);
+    await piece('u-b').click();
+    assert.equal(await state(), 'balanced');
+    assert.equal(await page.locator('#abilityPreview .seal-icon:not(.failed-seal)').count(), 1);
+    assert.deepEqual(await selected(), ['u-r', 'u-g', 'u-b']);
+    await page.locator('#reset').click();
+    await page.locator('#toggleSound').click();
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.evaluate(() => { addPiece('u-r'); addPiece('u-g'); addPiece('au-b'); });
+    assert.equal(await page.locator('.failed-seal').evaluate(node => getComputedStyle(node).animationName), 'none');
+    assert.equal(await page.evaluate(() => audio.voices.size), 0);
+    await page.locator('#reset').click();
+    assert.equal(await page.locator('.failed-seal').count(), 0);
+  });
+
+  it('keeps the action scale stationary across empty, partial, and every seal in all languages', async () => {
+    for (const width of [320, 390, 768, 1180, 1440, 2560]) {
+      await page.setViewportSize({ width, height: 1000 });
+      const failures = await page.evaluate(() => {
+        const failures = [];
+        for (const locale of ['ru', 'en', 'es', 'pt', 'zh']) {
+          setLanguage(locale);
+          let baseline;
+          for (const ids of [[], ['u-r'], ['u-r', 'u-g', 'au-b'], ...recipes2, ...recipes3]) {
+            slots = [...ids, ...Array(3 - ids.length).fill(null)];
+            render();
+            const y = $('actionScale').getBoundingClientRect().top - $('readout').getBoundingClientRect().top;
+            const gap = $('abilityDetail').getBoundingClientRect().top - $('abilityName').getBoundingClientRect().bottom;
+            if (Math.abs(gap - 8) > .5) failures.push({ locale, ids, gap });
+            baseline ??= y;
+            if (Math.abs(y - baseline) > .5) failures.push({ locale, ids, y, baseline });
+          }
+        }
+        return failures;
+      });
+      assert.deepEqual(failures, [], `Scale stays anchored at ${width}px`);
+    }
+  });
+
   it('keeps color tracks exclusive to the scientific mode', async () => {
     const tracks = page.locator('#balanceTracks');
     const fills = () => page.locator('.balance-track-fill').evaluateAll(nodes => nodes.map(node => [node.style.left, node.style.width]));
@@ -1361,11 +1617,11 @@ describe('Named alchemical scale', () => {
     assert.deepEqual(await page.locator('.action-value').allTextContents(), ['−2', '−1', '0', '+1', '+2']);
     assert.deepEqual(await page.locator('.action-direction').allTextContents(), ['К себе', 'От себя']);
     assert.deepEqual(await page.evaluate(() => actions.map(action => action.detail)), [
-      'Спрессовывает вещество в плотный сгусток.',
-      'Резко тянет выбранный предмет к тебе.',
-      'Обездвиживает выбранный предмет, фиксируя его на месте.',
-      'Отбрасывает выбранный предмет от тебя.',
-      'Разрушает цельную форму предмета, рассеивая его вещество вокруг.'
+      'Сжимает вещество в плотный сгусток.',
+      'Рывком притягивает предмет к тебе.',
+      'Удерживает предмет неподвижно.',
+      'Отбрасывает предмет от тебя.',
+      'Разрушает предмет и рассеивает его вещество.'
     ]);
     assert.equal(await page.locator('#actionMarker').isVisible(), false);
     assert.equal(await page.locator('#actionFill').isVisible(), false);
@@ -1472,6 +1728,29 @@ describe('Touch rune inspection', () => {
 });
 
 describe('Responsive presentation', () => {
+  it('orders mobile sections by the assembly flow and restores desktop columns', async () => {
+    for (const width of [320, 390, 680, 1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const theme of ['artifact', 'instrument']) {
+        await page.locator(`[data-theme-choice="${theme}"]`).click();
+        const boxes = await page.evaluate(() => Object.fromEntries(
+          ['.masthead', '.chamber', '.abilities', '.readout', '.library', '.bottom-bar']
+            .map(selector => [selector, document.querySelector(selector).getBoundingClientRect().toJSON()])
+        ));
+        if (width <= 680) {
+          const sections = Object.values(boxes);
+          for (let index = 1; index < sections.length; index++) {
+            assert.ok(sections[index].top >= sections[index - 1].bottom - 1, `${theme}/${width}: section ${index} follows the previous section`);
+          }
+        } else {
+          assert.ok(boxes['.library'].right < boxes['.chamber'].left);
+          assert.ok(boxes['.chamber'].right < boxes['.readout'].left);
+          assert.ok(boxes['.abilities'].top >= boxes['.chamber'].bottom);
+        }
+      }
+    }
+  });
+
   it('keeps circular contours at a stable stroke width across viewport sizes and pixel densities', async () => {
     for (const deviceScaleFactor of [1, 2]) {
       const probeContext = await browser.newContext({ deviceScaleFactor, reducedMotion: 'reduce', locale: 'ru-RU' });

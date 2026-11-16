@@ -38,6 +38,36 @@ const translated = (key, params = {}) => page.evaluate(({ key, params }) => t(ke
 const placeholders = value => [...value.matchAll(/\{([A-Za-z]\w*)\}/g)].map(match => match[1]).sort();
 
 describe('Localization', () => {
+  it('uses consistent English seal terminology and distinguishes waiting from incomplete assembly', async () => {
+    await choose('en');
+    assert.equal(await page.locator('#abilityName').textContent(), 'No seal yet');
+    await page.evaluate(() => addPiece('u-r'));
+    assert.equal(await page.locator('#abilityName').textContent(), 'Seal incomplete');
+    assert.equal(await page.locator('#resultTitle').textContent(), 'Seal incomplete');
+    assert.match(await page.locator('#fieldDescription').textContent(), /Stones: 1/);
+    await page.evaluate(() => setRecipe(['u-r', 'u-g', 'u-b']));
+    assert.equal(await page.locator('#abilityName').textContent(), 'Greater Dispersion Seal');
+    assert.equal(await page.locator('#resultDetail').textContent(), 'Greater seal complete');
+    assert.equal(await page.locator('#abilityDetail').textContent(), 'Breaks the target apart and scatters the fragments.');
+    await page.locator('#bindSeal').click();
+    assert.equal(await page.locator('#releaseAll').textContent(), 'Unbind All Seals');
+    await page.locator('#releaseAll').click();
+    await page.evaluate(() => setRecipe(['u-r', 'ad-r']));
+    assert.equal(await page.locator('#abilityName').textContent(), 'Lesser Repulsion Seal');
+    await page.locator('#reset').click();
+    assert.equal(await page.locator('#abilityName').textContent(), 'No seal yet');
+    await page.locator('[data-theme-choice="instrument"]').click();
+    assert.equal(await page.locator('#resultTitle').textContent(), 'No quarks added');
+    assert.equal(await page.locator('#releaseAll').textContent(), 'Break Apart All Particles');
+    await page.evaluate(() => setRecipe(['u-r', 'u-g', 'au-b']));
+    assert.equal(await page.locator('#resultTitle').textContent(), 'Color charge is unbalanced');
+    await choose('ru');
+    await page.locator('[data-theme-choice="artifact"]').click();
+    await page.locator('#reset').click();
+    await page.evaluate(() => addPiece('u-r'));
+    assert.equal(await page.locator('#abilityName').textContent(), await translated('ability.incomplete'));
+  });
+
   it('themes the language popup without a focus outline and retains mouse and keyboard selection', async () => {
     const select = page.locator('#languageSelect');
     assert.equal(await select.evaluate(node => getComputedStyle(node).appearance), 'base-select');

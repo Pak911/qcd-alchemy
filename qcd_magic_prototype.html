@@ -198,8 +198,9 @@
     .orbit-slot { position: absolute; width: 11.875%; min-width: 40px; aspect-ratio: 76 / 82; transform: translate(-50%, -50%); }
     .socket { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; padding: 0; pointer-events: auto; }
     .socket:hover, .socket:focus-visible { z-index: 1; }
-    .orbit-slot.multiple .socket:first-child { transform: translateX(-40%); }
-    .orbit-slot.multiple .socket:last-child { transform: translateX(40%); }
+    .piece.axis-blocked { opacity: .25; filter: grayscale(1); cursor: not-allowed; }
+    .socket.filled[data-size="small"] .socket-outline-large,
+    .socket.filled[data-size="large"] .socket-outline-small { display: none; }
     .socket-face { width: 100%; height: 100%; display: grid; place-items: center; position: relative; }
     .socket-outlines { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--bg); stroke: var(--line); stroke-width: 1; }
     .socket-outline-small { fill: #ffffff02; stroke-dasharray: 2 3; }
@@ -246,8 +247,32 @@
     .ability-preview:empty { border: 1px dashed var(--line); border-radius: 50%; }
     .ability-name { font: normal 23px/1.25 var(--heading); overflow-wrap: anywhere; margin: 12px 0 8px; }
     .ability-detail { font-size: 11px; color: var(--muted); margin: 0 0 22px; }
+    .result-copy { display: flow-root; }
     .rune-tooltip { position: fixed; z-index: 30; width: max-content; max-width: min(290px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto; padding: 12px 15px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); box-shadow: 0 8px 25px #00000066; color: var(--ink); font-size: 12px; line-height: 1.65; white-space: pre-line; }
     .ability-preview .seal-icon { width: 100%; height: 100%; }
+    button.ability-preview { display: block; padding: 0; border: 0; background: transparent; }
+    .ability-preview[hidden] { display: none; }
+    .seal-hit { position: absolute; left: 50%; top: 49%; width: 15.625%; aspect-ratio: 1; transform: translate(-50%, -50%); border: 0; border-radius: 50%; background: transparent; }
+    .seal-hit[hidden] { display: none; }
+    .seal-flight { position: fixed; pointer-events: none; z-index: 20; transform-origin: top left; }
+    .seal-flight .seal-icon { width: 100%; height: 100%; }
+    .ability-card.arriving .seal-icon, .inventory-cell.returning .piece { visibility: hidden; }
+    .readout.arrived .ability-preview .seal-icon { animation: result-awaken .7s ease-out both; }
+    @keyframes result-awaken { from { opacity: 0; transform: scale(.75); filter: blur(7px) drop-shadow(0 0 12px var(--accent)); } 55% { opacity: .8; filter: blur(1.5px) drop-shadow(0 0 5px var(--accent)); } to { opacity: 1; transform: scale(1); filter: blur(0) drop-shadow(0 0 0 transparent); } }
+    .failed-seal { color: var(--red); opacity: .8; }
+    .readout.awaiting-result #abilityPreview, .readout.awaiting-result #resultCopy { visibility: hidden; }
+    .soul-flight { position: fixed; width: 14px; height: 14px; margin: -7px; border-radius: 50%; pointer-events: none; z-index: 25; background: radial-gradient(circle, #fff8e5 0 10%, rgba(var(--accent-rgb), .8) 25%, transparent 70%); box-shadow: 0 0 16px 5px rgba(var(--accent-rgb), .3); }
+    .soul-flight::before { content: ""; position: absolute; right: 7px; top: 0; width: 90px; height: 14px; border-radius: 50%; background: linear-gradient(to right, transparent, rgba(var(--accent-rgb), .5)); transform: rotate(var(--trail-angle)); transform-origin: right center; filter: blur(5px); }
+    .soul-flight::after { content: ""; position: absolute; inset: -15px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--accent-rgb), .25), transparent 70%); filter: blur(3px); }
+    .soul-flight.dissolving::before { display: none; }
+    .soul-mote { position: fixed; width: 5px; height: 5px; margin: -2.5px; border-radius: 50%; background: #fff0c5; box-shadow: 0 0 9px 3px rgba(var(--accent-rgb), .5); pointer-events: none; z-index: 24; }
+    .failed-seal .seal-fragment { transform: translate(var(--split-x), var(--split-y)); }
+    .readout.failed-pulse .failed-seal { animation: seal-falter .6s ease-out both; }
+    .readout.failed-pulse .seal-fragment { animation: seal-fracture .6s ease-out both; }
+    .chamber.failed-pulse .strand:not(.strand-glow) { animation: strand-recoil .5s ease-out; }
+    @keyframes seal-falter { 0% { opacity: .1; transform: scale(.7); } 35% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 12px var(--red)); } 45% { transform: translateX(-5px); } 55% { transform: translateX(4px); } 65% { transform: translateX(-2px); } 100% { opacity: .8; transform: scale(1); filter: none; } }
+    @keyframes seal-fracture { 0%, 35% { transform: translate(0, 0); } 65% { transform: translate(calc(var(--split-x) * 1.5), calc(var(--split-y) * 1.5)); } 100% { transform: translate(var(--split-x), var(--split-y)); } }
+    @keyframes strand-recoil { 0%, 100% { opacity: .65; } 35% { opacity: 1; stroke-width: 3; } 65% { opacity: .25; } }
     .piece, .socket, .ability-card { -webkit-touch-callout: none; user-select: none; }
     .inventory-cell.reserved .inventory-well { stroke: var(--accent); opacity: .45; }
     .inventory-cell.reserved::after { content: ""; position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); top: 32px; left: calc(50% - 2px); pointer-events: none; }
@@ -280,6 +305,8 @@
     .charge-marker { position: absolute; top: 4px; width: 7px; height: 7px; background: var(--accent); transform: translateX(-50%) rotate(45deg); transition: left .3s; box-shadow: 0 0 10px rgba(var(--accent-rgb), .25); }
     .readout-line { height: 1px; background: var(--line); margin-bottom: 23px; }
     .balance-value { display: flex; align-items: center; gap: 9px; margin: 13px 0 8px; font-size: 13px; }
+    [data-theme="instrument"] .readout[data-unbalanced-full="true"] #balanceValue,
+    [data-theme="instrument"] #resultTitle[data-unbalanced-full="true"] { color: var(--red); }
     .balance-indicator { width: 7px; height: 7px; border: 1px solid var(--muted); border-radius: 50%; }
     .readout[data-balanced="true"] .balance-indicator { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(var(--accent-rgb), .4); }
     .balance-tracks { display: grid; gap: 10px; margin-top: 23px; }
@@ -363,28 +390,28 @@
       .library-note { margin-bottom: 16px; }
     }
     @media (max-width: 680px) {
-      .abilities { max-width: 400px; }
+      .abilities { order: 2; width: 100%; max-width: 400px; }
       .ability-bar { grid-template-columns: repeat(3, minmax(0, 128px)); }
       .ability-slot { min-height: 104px; }
       .ability-card { min-height: 102px; padding: 6px 5px; }
       .ability-card .seal-icon { width: 62px; height: 62px; }
       .ability-label { font-size: 11px; }
       .ability-remove { width: 40px; height: 40px; }
-      .shell { padding: 20px 20px 16px; }
+      .shell { display: flex; flex-direction: column; padding: 20px 20px 16px; }
       .masthead { flex-wrap: wrap; gap: 20px; padding-bottom: 19px; }
       .brand { gap: 12px; }
       h1 { font-size: 31px; }
       .brand-mark { width: 30px; height: 37px; }
       .header-controls { width: 100%; justify-content: space-between; }
       .theme-switch button { padding: 8px 15px; }
-      .workbench { display: flex; flex-direction: column; gap: 0; padding-top: 23px; }
-      .chamber { order: 0; width: 100%; }
+      .workbench { display: contents; }
+      .chamber { order: 1; width: 100%; padding-top: 23px; }
       .field-wrap { width: min(100%, 460px); margin: 0 auto; }
       .field-status { margin-top: -8px; min-height: 61px; }
       .result-title { font-size: 24px; }
       .socket-remove { width: 17px; height: 17px; line-height: 13px; font-size: 13px; opacity: .8; }
       .socket .piece-charge { font-size: 9px; }
-      .library { order: 1; width: 100%; padding-top: 26px; margin-top: 22px; border-top: 1px solid var(--line); }
+      .library { order: 4; width: 100%; padding-top: 26px; margin-top: 22px; border-top: 1px solid var(--line); }
       .palette { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 6px; margin-top: 14px; }
       .palette-labels { display: none; }
       .family { padding-bottom: 10px; }
@@ -401,7 +428,7 @@
       .examples { padding-top: 0; border: 0; display: flex; align-items: center; gap: 17px; flex-wrap: wrap; }
       .example-buttons { flex: 1; margin: 0; }
       .cycle-note { flex-basis: 100%; margin-top: -9px; }
-      .readout { order: 2; display: grid; grid-template-columns: 1fr 1fr; column-gap: 35px; width: 100%; margin-top: 25px; padding-top: 23px; border-top: 1px solid var(--line); }
+      .readout { order: 3; display: grid; grid-template-columns: 1fr 1fr; column-gap: 35px; width: 100%; margin-top: 25px; padding-top: 23px; border-top: 1px solid var(--line); }
       .readout-line { display: none; }
       [data-theme="instrument"] .readout-line { display: none; }
       [data-theme="artifact"] .readout { display: block; }
@@ -409,7 +436,7 @@
       [data-theme="instrument"] .charge-value { font-size: 34px; }
       .balance-value { margin-top: 20px; }
       .balance-tracks { display: grid; margin-top: 17px; }
-      .bottom-bar { margin-top: 24px; gap: 15px; }
+      .bottom-bar { order: 5; margin-top: 24px; gap: 15px; }
       .colophon { font-size: 8px; }
     }
     @media (max-width: 360px) {
@@ -536,6 +563,7 @@
             </g>
           </svg>
           <div id="slots" class="slots" role="group"></div>
+          <button id="sealHit" class="seal-hit" type="button" hidden></button>
         </div>
         <div class="field-status" role="status" aria-live="polite" aria-atomic="true">
           <h2 id="resultTitle" class="result-title"></h2>
@@ -548,15 +576,18 @@
       <aside id="readout" class="readout" data-balanced="false" data-i18n-aria="readout.label">
         <section class="instrument-only" aria-labelledby="chargeTitle">
           <h2 id="stateName" class="ability-name" hidden></h2>
+          <button id="compositionPreview" class="ability-preview" type="button" hidden></button>
           <h2 id="chargeTitle" class="eyebrow" data-i18n="charge.heading"></h2>
           <div class="charge-value"><span id="chargeValue">0</span><span class="charge-unit">e</span></div>
           <div class="charge-scale" aria-hidden="true"><div class="charge-rail"></div><div id="chargeFill" class="charge-fill"></div><div id="ticks"></div><div id="chargeMarker" class="charge-marker"></div><div id="chargePreview" class="scale-preview" hidden></div></div>
         </section>
         <section class="artifact-only" aria-labelledby="abilityHeading">
           <h2 id="abilityHeading" class="eyebrow" data-i18n="ability.heading"></h2>
-          <div id="abilityPreview" class="ability-preview" aria-hidden="true"></div>
-          <h3 id="abilityName" class="ability-name"></h3>
-          <p id="abilityDetail" class="ability-detail"></p>
+          <button id="abilityPreview" class="ability-preview" type="button" disabled></button>
+          <div id="resultCopy" class="result-copy">
+            <h3 id="abilityName" class="ability-name"></h3>
+            <p id="abilityDetail" class="ability-detail"></p>
+          </div>
           <p class="action-direction" data-i18n="direction.inward"></p>
           <div id="actionScale" class="action-scale" data-ready="false">
             <ol id="actionSteps" class="action-steps" data-i18n-aria="action.scale"></ol>
@@ -602,18 +633,18 @@
       "theme.artifact": "Алхимия",
       "theme.instrument": "Кварковая модель",
       "language.label": "Язык",
-      "sound.on": "Звук вкл",
-      "sound.off": "Звук выкл",
+      "sound.on": "Звук вкл.",
+      "sound.off": "Звук выкл.",
       "sound.onLabel": "Звук включён. Выключить звук",
       "sound.offLabel": "Звук выключен. Включить звук",
       "library.artifact": "Инвентарь",
       "library.instrument": "Кварки и антикварки",
-      "forward.artifact": "Прямые",
+      "forward.artifact": "Знаки",
       "forward.instrument": "Кварки",
       "reverse.artifact": "Обратные",
       "reverse.instrument": "Антикварки",
       "libraryNote.artifact": "Нажми на камень, чтобы добавить его в круг.",
-      "libraryNote.instrument": "Выбери компонент для текущего состава.",
+      "libraryNote.instrument": "Выбери кварк или антикварк, чтобы добавить его на диаграмму.",
       "examples.heading": "Сочетания",
       "examples.pair": "Пара",
       "examples.triple": "Тройка",
@@ -627,9 +658,9 @@
       "fieldTitle.artifact": "Баланс трёх символов и их противоположностей",
       "fieldTitle.instrument": "Диаграмма цветовых зарядов",
       "field.colorSpace": "ЦВЕТОВОЕ ПРОСТРАНСТВО",
-      "slots.artifact": "Камни на круге, не больше трёх одновременно",
+      "slots.artifact": "Камни в круге, не больше трёх одновременно",
       "slots.instrument": "Текущий состав: до трёх кварков или антикварков",
-      "slots.count.artifact": "{count} / 3 камня",
+      "slots.count.artifact": "Камни: {count} / 3",
       "slots.count.instrument": "Компоненты: {count} / 3",
       "slots.capacity": "Свободно мест: {free} из {total}",
       "inventory.artifact": "Свободных камней: {free} из {total}. Закреплено: {reserved}.",
@@ -640,20 +671,23 @@
       "readout.label": "Показания",
       "charge.heading": "Электрический заряд",
       "ability.heading": "Результат",
-      "ability.empty": "Печать не собрана",
+      "ability.empty": "Печати пока нет",
+      "ability.incomplete": "Печать ещё не собрана",
       "ability.hint": "Приведи знаки в равновесие.",
+      "ability.failed": "Знаки не сошлись",
+      "ability.retry": "Попробуй другой камень, чтобы уравновесить знаки.",
       "direction.inward": "К себе",
       "direction.outward": "От себя",
       "action.scale": "Шкала действий",
-      "balance.heading": "Цветовой баланс",
+      "balance.heading": "Цветовой заряд",
       "balance.empty": "Нет кварков",
       "balance.ready": "Скомпенсирован",
       "balance.seeking": "Не скомпенсирован",
       "balance.anticolor": "антицвет",
       "balance.color": "цвет",
-      "abilities.artifact": "Панель способностей",
+      "abilities.artifact": "Закреплённые печати",
       "abilities.instrument": "Частицы",
-      "releaseAll.artifact": "Разобрать все способности",
+      "releaseAll.artifact": "Разобрать все печати",
       "releaseAll.instrument": "Разобрать все частицы",
       "ability.freeSlot": "Свободное место {index}",
       "ability.inspect": "{name}. Показать состав",
@@ -664,44 +698,44 @@
       "scienceSummary.artifact": "Что скрыто внутри",
       "scienceSummary.instrument": "О кварковой модели",
       "science.intro": "За начертаниями скрываются кварки и антикварки.",
-      "science.symbols": "Три семейства обозначают цветовые заряды, противоположные направления соответствуют цвету и антицвету. В кварковой модели используются обозначения u, d и антикварков с чертой сверху. Размер значка показывает модуль электрического заряда.",
+      "science.symbols": "Три семейства знаков обозначают цветовые заряды, противоположные направления соответствуют цвету и антицвету. Кварки обозначены буквами u и d, антикварки — теми же буквами с чертой сверху. Размер значка показывает модуль электрического заряда.",
       "science.model": "В центре диаграммы уравновешиваются пары «цвет + соответствующий антицвет», а также тройки разных цветов или разных антицветов. Это наглядная модель правил сочетания, вдохновлённая квантовой хромодинамикой.",
-      "science.result": "{kind}. Аналог по кварковому составу: {analog}. Электрический заряд: {charge} e.",
-      "science.seeking": "Цветовые заряды ещё не скомпенсированы. Замкнутая пара соответствует мезону, тройка — бариону или антибариону.",
+      "science.result": "{kind}. Примеры частиц с таким кварковым составом: {analog}. Электрический заряд: {charge} e.",
+      "science.seeking": "Цветовые заряды ещё не скомпенсированы. Пара кварка и антикварка со скомпенсированным цветовым зарядом образует мезон. Тройка кварков со скомпенсированным цветовым зарядом образует барион, а тройка антикварков — антибарион.",
       "edition.artifact": "01 · АЛХИМИЯ",
       "edition.instrument": "02 · КВАРКОВАЯ МОДЕЛЬ",
       "action.compression.name": "Сжатие",
       "action.compression.genitive": "сжатия",
-      "action.compression.detail": "Спрессовывает вещество в плотный сгусток.",
+      "action.compression.detail": "Сжимает вещество в плотный сгусток.",
       "action.compression.seal": "Печать сжатия",
       "action.compression.full": "Большая печать сжатия",
       "action.attraction.name": "Притяжение",
       "action.attraction.genitive": "притяжения",
-      "action.attraction.detail": "Резко тянет выбранный предмет к тебе.",
-      "action.attraction.smallDetail": "Слабо притягивает выбранный предмет к тебе.",
+      "action.attraction.detail": "Рывком притягивает предмет к тебе.",
+      "action.attraction.smallDetail": "Слегка притягивает предмет к тебе.",
       "action.attraction.smallName": "Малое притяжение",
       "action.attraction.seal": "Печать притяжения",
       "action.attraction.smallSeal": "Малая печать притяжения",
       "action.attraction.full": "Большая печать притяжения",
       "action.holding.name": "Удержание",
       "action.holding.genitive": "удержания",
-      "action.holding.detail": "Обездвиживает выбранный предмет, фиксируя его на месте.",
-      "action.holding.smallDetail": "Сдерживает движение выбранного предмета.",
+      "action.holding.detail": "Удерживает предмет неподвижно.",
+      "action.holding.smallDetail": "Сдерживает движение предмета.",
       "action.holding.smallName": "Малое удержание",
       "action.holding.seal": "Печать удержания",
       "action.holding.smallSeal": "Малая печать удержания",
       "action.holding.full": "Большая печать удержания",
       "action.repulsion.name": "Отталкивание",
       "action.repulsion.genitive": "отталкивания",
-      "action.repulsion.detail": "Отбрасывает выбранный предмет от тебя.",
-      "action.repulsion.smallDetail": "Слабо отталкивает выбранный предмет от тебя.",
+      "action.repulsion.detail": "Отбрасывает предмет от тебя.",
+      "action.repulsion.smallDetail": "Слегка отталкивает предмет от тебя.",
       "action.repulsion.smallName": "Малое отталкивание",
       "action.repulsion.seal": "Печать отталкивания",
       "action.repulsion.smallSeal": "Малая печать отталкивания",
       "action.repulsion.full": "Большая печать отталкивания",
       "action.dispersion.name": "Рассеивание",
       "action.dispersion.genitive": "рассеивания",
-      "action.dispersion.detail": "Разрушает цельную форму предмета, рассеивая его вещество вокруг.",
+      "action.dispersion.detail": "Разрушает предмет и рассеивает его вещество.",
       "action.dispersion.seal": "Печать рассеивания",
       "action.dispersion.full": "Большая печать рассеивания",
       "kind.meson": "Мезон",
@@ -726,11 +760,11 @@
       "family.red": "Марс",
       "family.green": "Венера",
       "family.blue": "Луна",
-      "sign.red.forward": "Прямой знак Марса",
+      "sign.red.forward": "Знак Марса",
       "sign.red.reverse": "Обратный знак Марса",
-      "sign.green.forward": "Прямой знак Венеры",
+      "sign.green.forward": "Знак Венеры",
       "sign.green.reverse": "Обратный знак Венеры",
-      "sign.blue.forward": "Прямой знак Луны",
+      "sign.blue.forward": "Знак Луны",
       "sign.blue.reverse": "Обратный знак Луны",
       "piece.artifact.inward": "{sign}. К себе: {magnitude}/3",
       "piece.artifact.outward": "{sign}. От себя: {magnitude}/3",
@@ -746,7 +780,7 @@
       "rune.d": "{name}\nАромат: d (нижний).\nРазмер значка обозначает модуль электрического заряда.",
       "tooltip.particle": "{kind} · заряд {charge} e",
       "tooltip.composition": "Состав:",
-      "tooltip.valence": "Валентный состав: {formula}",
+      "tooltip.valence": "Состав валентных кварков: {formula}",
       "tooltip.componentExamples": "Примеры частиц с таким компонентом:",
       "tooltip.compositionExamples": "Примеры частиц с таким составом:",
       "tooltip.reserved": "В закреплённом составе.",
@@ -759,18 +793,18 @@
       "axis.color": "Цвет: {color}",
       "axis.anticolor": "Антицвет: {color}",
       "axis.empty": "{axis}, гнездо свободно",
-      "result.empty.artifact": "Помести камень на алхимический круг",
-      "result.empty.instrument": "Состав не выбран",
+      "result.empty.artifact": "Помести камень в круг",
+      "result.empty.instrument": "Кварки пока не добавлены",
       "result.hint.artifact": "Нажми на камень в инвентаре или на свободное гнездо",
       "result.hint.instrument": "Выбери кварк или антикварк",
-      "result.smallComplete": "Малая печать завершена",
-      "result.largeComplete": "Большая печать завершена",
+      "result.smallComplete": "Малая печать собрана",
+      "result.largeComplete": "Большая печать собрана",
       "result.one": "Добавь ещё один камень",
       "result.two": "Добавь или замени камень",
       "result.three": "Убери один камень, чтобы попробовать другой",
-      "result.seeking.instrument": "Цвет не скомпенсирован",
+      "result.seeking.instrument": "Цветовой заряд не скомпенсирован",
       "result.components": "Компонентов: {count} · электрический заряд {charge} e",
-      "field.count.artifact": "Рун: {count}.",
+      "field.count.artifact": "Камней: {count}.",
       "field.count.instrument": "Кварков и антикварков: {count}.",
       "field.empty": "Круг пуст.",
       "field.centered": "Центр достигнут.",
@@ -792,12 +826,12 @@
       "sound.offLabel": "Sound is off. Turn sound on",
       "library.artifact": "Inventory",
       "library.instrument": "Quarks and Antiquarks",
-      "forward.artifact": "Forward",
+      "forward.artifact": "Signs",
       "forward.instrument": "Quarks",
-      "reverse.artifact": "Reverse",
+      "reverse.artifact": "Reversed Signs",
       "reverse.instrument": "Antiquarks",
       "libraryNote.artifact": "Select a stone to add it to the circle.",
-      "libraryNote.instrument": "Select a component to add to the current composition.",
+      "libraryNote.instrument": "Select a quark or antiquark to add it to the diagram.",
       "examples.heading": "Combinations",
       "examples.pair": "Pair",
       "examples.triple": "Triple",
@@ -806,7 +840,7 @@
       "examples.randomPair": "Random pair",
       "examples.randomTriple": "Random triple",
       "examples.randomComposition": "Random composition: {count} components",
-      "field.artifact": "Alchemy Circle",
+      "field.artifact": "Alchemical Circle",
       "field.instrument": "Color Diagram",
       "fieldTitle.artifact": "Balance of three symbols and their opposites",
       "fieldTitle.instrument": "Color charge diagram",
@@ -824,8 +858,11 @@
       "readout.label": "Readout",
       "charge.heading": "Electric Charge",
       "ability.heading": "Result",
-      "ability.empty": "No seal formed",
+      "ability.empty": "No seal yet",
+      "ability.incomplete": "Seal incomplete",
       "ability.hint": "Bring the signs into balance.",
+      "ability.failed": "The signs did not align",
+      "ability.retry": "Try a different stone to balance the circle.",
       "direction.inward": "Toward you",
       "direction.outward": "Away from you",
       "action.scale": "Action Scale",
@@ -835,13 +872,13 @@
       "balance.seeking": "Unbalanced",
       "balance.anticolor": "anticolor",
       "balance.color": "color",
-      "abilities.artifact": "Ability Panel",
+      "abilities.artifact": "Bound Seals",
       "abilities.instrument": "Particles",
-      "releaseAll.artifact": "Dismantle All Abilities",
-      "releaseAll.instrument": "Dismantle All Particles",
+      "releaseAll.artifact": "Unbind All Seals",
+      "releaseAll.instrument": "Break Apart All Particles",
       "ability.freeSlot": "Empty slot {index}",
       "ability.inspect": "{name}. Show composition",
-      "ability.release": "Dismantle: {name}",
+      "ability.release": "Release: {name}",
       "ability.saved": "Saved: {name}. Components reserved.",
       "ability.returned.artifact": "Stones returned: {count}.",
       "ability.returned.instrument": "Components returned: {count}.",
@@ -850,44 +887,44 @@
       "science.intro": "The symbols represent quarks and antiquarks.",
       "science.symbols": "The three sign families represent color charges; opposite orientations correspond to color and anticolor. The quark model uses u, d, and overbars for antiquarks. Icon size shows the magnitude of electric charge.",
       "science.model": "Matching color + anticolor pairs and triples of three different colors or three different anticolors balance at the center of the diagram. This is a visual model of combination rules inspired by quantum chromodynamics.",
-      "science.result": "{kind}. Quark-composition analog: {analog}. Electric charge: {charge} e.",
-      "science.seeking": "Color charges are not yet balanced. A closed pair corresponds to a meson; a closed triple to a baryon or antibaryon.",
+      "science.result": "{kind}. Particles with this quark content: {analog}. Electric charge: {charge} e.",
+      "science.seeking": "Color charges are not yet balanced. A color-neutral quark-antiquark pair forms a meson. A color-neutral combination of three quarks forms a baryon; three antiquarks form an antibaryon.",
       "edition.artifact": "01 · ALCHEMY",
       "edition.instrument": "02 · QUARK MODEL",
       "action.compression.name": "Compression",
       "action.compression.genitive": "compression",
       "action.compression.detail": "Compacts matter into a dense mass.",
-      "action.compression.seal": "Compression Seal",
-      "action.compression.full": "Large Compression Seal",
+      "action.compression.seal": "Greater Compression Seal",
+      "action.compression.full": "Greater Compression Seal",
       "action.attraction.name": "Attraction",
       "action.attraction.genitive": "attraction",
-      "action.attraction.detail": "Sharply pulls the chosen object toward you.",
-      "action.attraction.smallDetail": "Weakly pulls the chosen object toward you.",
+      "action.attraction.detail": "Yanks the target toward you.",
+      "action.attraction.smallDetail": "Gently pulls the target toward you.",
       "action.attraction.smallName": "Lesser Attraction",
-      "action.attraction.seal": "Attraction Seal",
+      "action.attraction.seal": "Greater Attraction Seal",
       "action.attraction.smallSeal": "Lesser Attraction Seal",
-      "action.attraction.full": "Large Attraction Seal",
+      "action.attraction.full": "Greater Attraction Seal",
       "action.holding.name": "Holding",
       "action.holding.genitive": "holding",
-      "action.holding.detail": "Immobilizes the chosen object, fixing it in place.",
-      "action.holding.smallDetail": "Restrains the chosen object's movement.",
+      "action.holding.detail": "Holds the target firmly in place.",
+      "action.holding.smallDetail": "Restricts the target's movement.",
       "action.holding.smallName": "Lesser Holding",
-      "action.holding.seal": "Holding Seal",
+      "action.holding.seal": "Greater Holding Seal",
       "action.holding.smallSeal": "Lesser Holding Seal",
-      "action.holding.full": "Large Holding Seal",
+      "action.holding.full": "Greater Holding Seal",
       "action.repulsion.name": "Repulsion",
       "action.repulsion.genitive": "repulsion",
-      "action.repulsion.detail": "Throws the chosen object away from you.",
-      "action.repulsion.smallDetail": "Weakly pushes the chosen object away from you.",
+      "action.repulsion.detail": "Hurls the target away from you.",
+      "action.repulsion.smallDetail": "Gently pushes the target away from you.",
       "action.repulsion.smallName": "Lesser Repulsion",
-      "action.repulsion.seal": "Repulsion Seal",
+      "action.repulsion.seal": "Greater Repulsion Seal",
       "action.repulsion.smallSeal": "Lesser Repulsion Seal",
-      "action.repulsion.full": "Large Repulsion Seal",
+      "action.repulsion.full": "Greater Repulsion Seal",
       "action.dispersion.name": "Dispersion",
       "action.dispersion.genitive": "dispersion",
-      "action.dispersion.detail": "Breaks apart the object, scattering its matter around it.",
-      "action.dispersion.seal": "Dispersion Seal",
-      "action.dispersion.full": "Large Dispersion Seal",
+      "action.dispersion.detail": "Breaks the target apart and scatters the fragments.",
+      "action.dispersion.seal": "Greater Dispersion Seal",
+      "action.dispersion.full": "Greater Dispersion Seal",
       "kind.meson": "Meson",
       "kind.baryon": "Baryon",
       "kind.antibaryon": "Antibaryon",
@@ -910,12 +947,12 @@
       "family.red": "Mars",
       "family.green": "Venus",
       "family.blue": "Moon",
-      "sign.red.forward": "Forward Mars sign",
-      "sign.red.reverse": "Reverse Mars sign",
-      "sign.green.forward": "Forward Venus sign",
-      "sign.green.reverse": "Reverse Venus sign",
-      "sign.blue.forward": "Forward Moon sign",
-      "sign.blue.reverse": "Reverse Moon sign",
+      "sign.red.forward": "Sign of Mars",
+      "sign.red.reverse": "Reversed Sign of Mars",
+      "sign.green.forward": "Sign of Venus",
+      "sign.green.reverse": "Reversed Sign of Venus",
+      "sign.blue.forward": "Sign of the Moon",
+      "sign.blue.reverse": "Reversed Sign of the Moon",
       "piece.artifact.inward": "{sign}. Toward you: {magnitude}/3",
       "piece.artifact.outward": "{sign}. Away from you: {magnitude}/3",
       "piece.red.quark": "Red {flavor} quark, charge {charge} e",
@@ -930,7 +967,7 @@
       "rune.d": "{name}\nFlavor: d (down).\nIcon size indicates the magnitude of electric charge.",
       "tooltip.particle": "{kind} · charge {charge} e",
       "tooltip.composition": "Composition:",
-      "tooltip.valence": "Valence composition: {formula}",
+      "tooltip.valence": "Valence quark content: {formula}",
       "tooltip.componentExamples": "Example particles with this component:",
       "tooltip.compositionExamples": "Example particles with this composition:",
       "tooltip.reserved": "Reserved in a saved composition.",
@@ -943,23 +980,23 @@
       "axis.color": "Color: {color}",
       "axis.anticolor": "Anticolor: {color}",
       "axis.empty": "{axis}, empty slot",
-      "result.empty.artifact": "Place a stone in the alchemy circle",
-      "result.empty.instrument": "No composition selected",
-      "result.hint.artifact": "Select a stone in the inventory or an empty slot",
+      "result.empty.artifact": "Place a stone in the circle",
+      "result.empty.instrument": "No quarks added",
+      "result.hint.artifact": "Choose a stone from your inventory, or select an empty slot",
       "result.hint.instrument": "Select a quark or antiquark",
       "result.smallComplete": "Lesser seal complete",
-      "result.largeComplete": "Large seal complete",
+      "result.largeComplete": "Greater seal complete",
       "result.one": "Add another stone",
       "result.two": "Add or replace a stone",
       "result.three": "Remove a stone to try another",
-      "result.seeking.instrument": "Color is unbalanced",
+      "result.seeking.instrument": "Color charge is unbalanced",
       "result.components": "Components: {count} · electric charge {charge} e",
-      "field.count.artifact": "Runes: {count}.",
+      "field.count.artifact": "Stones: {count}.",
       "field.count.instrument": "Quarks and antiquarks: {count}.",
       "field.empty": "The circle is empty.",
       "field.centered": "Center reached.",
       "field.offset": "Focus is off-center.",
-      "field.unfinished": "No seal formed.",
+      "field.unfinished": "The seal is incomplete.",
       "field.charge": "Electric charge {charge} e.",
       "slots.full.artifact": "The circle already holds three stones. Remove one to add another.",
       "slots.full.instrument": "The composition already has three components. Remove one to add another."
@@ -976,7 +1013,7 @@
       "sound.offLabel": "Sonido desactivado. Activa el sonido",
       "library.artifact": "Inventario",
       "library.instrument": "Quarks y antiquarks",
-      "forward.artifact": "Directos",
+      "forward.artifact": "Signos",
       "forward.instrument": "Quarks",
       "reverse.artifact": "Inversos",
       "reverse.instrument": "Antiquarks",
@@ -1009,7 +1046,10 @@
       "charge.heading": "Carga eléctrica",
       "ability.heading": "Resultado",
       "ability.empty": "Sello sin formar",
+      "ability.incomplete": "Sello sin formar",
       "ability.hint": "Equilibra los signos.",
+      "ability.failed": "Los signos no se alinearon",
+      "ability.retry": "Cambia una piedra para encontrar el equilibrio.",
       "direction.inward": "Hacia ti",
       "direction.outward": "Lejos de ti",
       "action.scale": "Escala de acciones",
@@ -1094,11 +1134,11 @@
       "family.red": "Marte",
       "family.green": "Venus",
       "family.blue": "Luna",
-      "sign.red.forward": "Signo directo de Marte",
+      "sign.red.forward": "Signo de Marte",
       "sign.red.reverse": "Signo inverso de Marte",
-      "sign.green.forward": "Signo directo de Venus",
+      "sign.green.forward": "Signo de Venus",
       "sign.green.reverse": "Signo inverso de Venus",
-      "sign.blue.forward": "Signo directo de la Luna",
+      "sign.blue.forward": "Signo de la Luna",
       "sign.blue.reverse": "Signo inverso de la Luna",
       "piece.artifact.inward": "{sign}. Hacia ti: {magnitude}/3",
       "piece.artifact.outward": "{sign}. Lejos de ti: {magnitude}/3",
@@ -1160,7 +1200,7 @@
       "sound.offLabel": "Som desligado. Ligar o som",
       "library.artifact": "Inventário",
       "library.instrument": "Quarks e antiquarks",
-      "forward.artifact": "Diretos",
+      "forward.artifact": "Sinais",
       "forward.instrument": "Quarks",
       "reverse.artifact": "Inversos",
       "reverse.instrument": "Antiquarks",
@@ -1193,7 +1233,10 @@
       "charge.heading": "Carga elétrica",
       "ability.heading": "Resultado",
       "ability.empty": "Sigilo incompleto",
+      "ability.incomplete": "Sigilo incompleto",
       "ability.hint": "Equilibre os sinais.",
+      "ability.failed": "Os sinais não se alinharam",
+      "ability.retry": "Troque uma pedra para encontrar o equilíbrio.",
       "direction.inward": "Em direção a você",
       "direction.outward": "Para longe de você",
       "action.scale": "Escala de ações",
@@ -1278,11 +1321,11 @@
       "family.red": "Marte",
       "family.green": "Vênus",
       "family.blue": "Lua",
-      "sign.red.forward": "Sinal direto de Marte",
+      "sign.red.forward": "Sinal de Marte",
       "sign.red.reverse": "Sinal inverso de Marte",
-      "sign.green.forward": "Sinal direto de Vênus",
+      "sign.green.forward": "Sinal de Vênus",
       "sign.green.reverse": "Sinal inverso de Vênus",
-      "sign.blue.forward": "Sinal direto da Lua",
+      "sign.blue.forward": "Sinal da Lua",
       "sign.blue.reverse": "Sinal inverso da Lua",
       "piece.artifact.inward": "{sign}. Em direção a você: {magnitude}/3",
       "piece.artifact.outward": "{sign}. Para longe de você: {magnitude}/3",
@@ -1344,7 +1387,7 @@
       "sound.offLabel": "声音已关闭。开启声音",
       "library.artifact": "物品栏",
       "library.instrument": "夸克与反夸克",
-      "forward.artifact": "正相",
+      "forward.artifact": "符文",
       "forward.instrument": "夸克",
       "reverse.artifact": "反相",
       "reverse.instrument": "反夸克",
@@ -1377,7 +1420,10 @@
       "charge.heading": "电荷",
       "ability.heading": "结果",
       "ability.empty": "法印尚未成形",
+      "ability.incomplete": "法印尚未成形",
       "ability.hint": "让符文达到平衡。",
+      "ability.failed": "符文未能契合",
+      "ability.retry": "更换一块符石，寻找平衡。",
       "direction.inward": "朝向施法者",
       "direction.outward": "远离施法者",
       "action.scale": "作用刻度",
@@ -1462,11 +1508,11 @@
       "family.red": "火星",
       "family.green": "金星",
       "family.blue": "月亮",
-      "sign.red.forward": "正相火星符文",
+      "sign.red.forward": "火星符文",
       "sign.red.reverse": "反相火星符文",
-      "sign.green.forward": "正相金星符文",
+      "sign.green.forward": "金星符文",
       "sign.green.reverse": "反相金星符文",
-      "sign.blue.forward": "正相月亮符文",
+      "sign.blue.forward": "月亮符文",
       "sign.blue.reverse": "反相月亮符文",
       "piece.artifact.inward": "{sign}。朝向施法者：{magnitude}/3",
       "piece.artifact.outward": "{sign}。远离施法者：{magnitude}/3",
@@ -1600,6 +1646,9 @@
     }
     let slots = [null, null, null];
     const abilities = Array(6).fill(null);
+    const returningIds = new Set();
+    const arrivingAbilities = new Set();
+    const transfers = new Set();
     const actions = [
       { id: 'compression', path: 'M31 31 43 43M36 43H43V36M69 31 57 43M57 36V43H64M31 69 43 57M36 57H43V64M69 69 57 57M57 64V57H64' },
       { id: 'attraction', path: 'M72 50H44M52 42 44 50 52 58' },
@@ -1617,6 +1666,11 @@
     let audio = null;
     let previousKey = '';
     let arrivalTimer = 0;
+    let feedbackTimer = 0;
+    let feedbackFlight = null;
+    let feedbackSerial = 0;
+    let feedbackEmitter = 0;
+    const feedbackMotes = new Set();
     let frame = 0;
     let strandElements = [];
     const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1632,7 +1686,12 @@
     }
 
     function reservedIds() {
-      return abilities.filter(Boolean).flat();
+      return [...abilities.filter(Boolean).flat(), ...returningIds];
+    }
+
+    function occupiedAxis(id, ids = slots) {
+      const piece = byId[id];
+      return ids.some(other => other && byId[other].color === piece.color && byId[other].anti === piece.anti);
     }
 
     function abilityInfo(ids) {
@@ -1837,7 +1896,7 @@
             <span class="socket-face"><svg class="socket-outlines" viewBox="0 0 76 82" aria-hidden="true"><path class="socket-outline-large" d="M38 3 71 22V60L38 79 5 60V22Z"/><path class="socket-outline-small" d="M38 3 71 22V60L38 79 5 60V22Z" transform="translate(38 41) scale(.57) translate(-38 -41)"/></svg>${content}<svg class="socket-highlight" viewBox="0 0 76 82" aria-hidden="true"><path d="M38 3 71 22V60L38 79 5 60V22Z"/></svg></span>
             ${piece ? `<span class="piece-charge">${fractionText(piece.charge)}</span>` : targets}</${tag}>`;
         }).join('');
-        return `<div class="orbit-slot axis-node ${color} ${y > center.y ? 'lower-axis' : ''} ${indices.length ? 'active' : ''} ${indices.length > 1 ? 'multiple' : ''}" data-axis="${color}-${anti}" style="left:${x / 640 * 100}%;top:${y / 600 * 100}%">${sockets}</div>`;
+        return `<div class="orbit-slot axis-node ${color} ${y > center.y ? 'lower-axis' : ''} ${indices.length ? 'active' : ''}" data-axis="${color}-${anti}" style="left:${x / 640 * 100}%;top:${y / 600 * 100}%">${sockets}</div>`;
       })).join('');
       $('slotCount').textContent = t(`slots.count.${artifact ? 'artifact' : 'instrument'}`, { count });
       const capacityLabel = t('slots.capacity', { free: slots.length - count, total: slots.length });
@@ -1854,6 +1913,7 @@
         const cell = button.parentElement;
         const locked = reserved.includes(button.dataset.id);
         cell.classList.toggle('reserved', locked);
+        cell.classList.toggle('returning', returningIds.has(button.dataset.id));
         if (locked) {
           cell.dataset.inspect = button.dataset.id;
           cell.tabIndex = 0;
@@ -1867,8 +1927,10 @@
         }
         button.setAttribute('aria-label', t('piece.add', { name: pieceName(byId[button.dataset.id]) }));
         button.classList.toggle('in-use', taken);
-        button.disabled = taken;
-        button.setAttribute('aria-disabled', String(taken || count === 3));
+        const blocked = !taken && occupiedAxis(button.dataset.id);
+        button.classList.toggle('axis-blocked', blocked);
+        button.disabled = taken || blocked;
+        button.setAttribute('aria-disabled', String(taken || blocked || count === 3));
       });
       for (const size of [2, 3]) $('next' + size).disabled = !availableRecipes(size).length;
     }
@@ -1883,19 +1945,126 @@
         if (!ids) return `<li class="ability-slot empty" aria-label="${escapeHTML(t('ability.freeSlot', { index: index + 1 }))}"><span aria-hidden="true">${String(index + 1).padStart(2, '0')}</span></li>`;
         const info = abilityInfo(ids);
         const physical = `${kindNames[analyzeCombination(ids).kind]} · ${fractionText(totalThirds(ids))} e`;
-        return `<li class="ability-slot filled"><button type="button" class="ability-card" data-ability="${index}" aria-label="${escapeHTML(t('ability.inspect', { name: artifact ? info.full : physical }))}">
+        return `<li class="ability-slot filled"><button type="button" class="ability-card ${arrivingAbilities.has(index) ? 'arriving' : ''}" data-ability="${index}" aria-label="${escapeHTML(t('ability.inspect', { name: artifact ? info.full : physical }))}">
           ${artifact ? sealIcon(ids) : compositionIcon(ids)}<span class="ability-label">${escapeHTML(artifact ? info.label : physical)}</span></button>
           <button class="ability-remove" type="button" data-release="${index}" aria-label="${escapeHTML(t('ability.release', { name: artifact ? info.full : physical }))}">×</button></li>`;
       }).join('');
       $('bindSeal').hidden = !analyzeCombination().valid;
       $('bindSeal').textContent = t(`bind.${artifact ? 'artifact' : 'instrument'}`);
+      const ready = analyzeCombination().valid && abilities.includes(null);
+      $('bindSeal').disabled = !ready;
+      $('sealHit').hidden = !analyzeCombination().valid;
+      for (const id of ['sealHit', 'abilityPreview', 'compositionPreview']) {
+        $(id).disabled = !ready;
+        $(id).setAttribute('aria-label', $('bindSeal').textContent);
+      }
     }
 
-    function bindSeal() {
+    function failedSealIcon() {
+      return `<svg class="seal-icon failed-seal" viewBox="0 0 100 100" aria-hidden="true">
+        <g class="seal-fragment" style="--split-x:-3px;--split-y:-1px"><path d="M48 12A38 38 0 0 0 48 88L44 69 51 56 43 43 49 29Z" fill="currentColor" fill-opacity=".08"/><path d="M41 20A31 31 0 0 0 40 79" class="seal-rim"/><path d="M45 34 29 50 45 66" stroke-width="2.5"/></g>
+        <g class="seal-fragment" style="--split-x:3px;--split-y:1px"><path d="M52 12A38 38 0 0 1 52 88L48 69 55 56 47 43 53 29Z" fill="currentColor" fill-opacity=".08"/><path d="M59 20A31 31 0 0 1 60 79" class="seal-rim"/><path d="M55 34 71 50 55 66" stroke-width="2.5"/></g>
+      </svg>`;
+    }
+
+    function cancelResultFeedback() {
+      feedbackSerial++;
+      clearTimeout(feedbackTimer);
+      cancelAnimationFrame(feedbackEmitter);
+      feedbackEmitter = 0;
+      feedbackMotes.forEach(mote => { mote.getAnimations().forEach(animation => animation.cancel()); mote.remove(); });
+      feedbackMotes.clear();
+      feedbackFlight?.getAnimations().forEach(animation => animation.cancel());
+      feedbackFlight?.remove();
+      feedbackFlight = null;
+      $('readout').classList.remove('awaiting-result', 'arrived', 'failed-pulse');
+    }
+
+    function sendResultFeedback(failed, audible) {
+      const serial = feedbackSerial;
+      const reveal = () => {
+        if (serial !== feedbackSerial) return;
+        cancelAnimationFrame(feedbackEmitter);
+        feedbackEmitter = 0;
+        const soul = feedbackFlight;
+        if (soul) {
+          const box = soul.getBoundingClientRect();
+          const opacity = getComputedStyle(soul).opacity;
+          soul.getAnimations().forEach(animation => animation.cancel());
+          Object.assign(soul.style, { left: `${box.x + box.width / 2}px`, top: `${box.y + box.height / 2}px` });
+          soul.classList.add('dissolving');
+          const dissolve = soul.animate([
+            { transform: 'scale(.5)', opacity, filter: 'blur(0)' },
+            { transform: 'scale(5)', opacity: 0, filter: 'blur(5px)' }
+          ], { duration: 450, easing: 'ease-out', fill: 'forwards' });
+          const remove = () => { soul.remove(); if (feedbackFlight === soul) feedbackFlight = null; };
+          dissolve.finished.then(remove, remove);
+        }
+        $('readout').classList.remove('awaiting-result');
+        void $('readout').offsetWidth;
+        $('readout').classList.add(failed ? 'failed-pulse' : 'arrived');
+        if (failed && audible && !document.hidden) playSound(null, null, true);
+        feedbackTimer = setTimeout(() => $('readout').classList.remove('arrived', 'failed-pulse'), 750);
+      };
+      if (motionPreference.matches || document.hidden) { reveal(); return; }
+      $('readout').classList.add('awaiting-result');
+      feedbackTimer = setTimeout(() => {
+        if (serial !== feedbackSerial) return;
+        const source = new DOMPoint(motion.target.x, motion.target.y).matrixTransform($('field').getScreenCTM());
+        const target = $('abilityPreview').getBoundingClientRect();
+        const dx = target.x + target.width / 2 - source.x;
+        const dy = target.y + target.height / 2 - source.y;
+        const soul = document.createElement('span');
+        soul.className = 'soul-flight';
+        soul.setAttribute('aria-hidden', 'true');
+        soul.dataset.failed = String(failed);
+        Object.assign(soul.style, { left: `${source.x}px`, top: `${source.y}px` });
+        soul.style.setProperty('--trail-angle', `${Math.atan2(dy, dx)}rad`);
+        document.body.append(soul);
+        feedbackFlight = soul;
+        const animation = soul.animate([
+          { transform: 'translate(0, 0) scale(.7)', opacity: 0 },
+          { transform: `translate(${dx * .12}px, ${dy * .12 - 12}px) scale(1)`, opacity: failed ? .4 : 1, offset: .2 },
+          { transform: `translate(${dx}px, ${dy}px) scale(.5)`, opacity: failed ? .12 : .7 }
+        ], { duration: 550, easing: 'cubic-bezier(.3,.1,.3,1)', fill: 'forwards' });
+        let lastEmission = -Infinity;
+        let emitted = 0;
+        const emit = now => {
+          if (serial !== feedbackSerial || feedbackFlight !== soul) return;
+          if (now - lastEmission >= 30) {
+            lastEmission = now;
+            const box = soul.getBoundingClientRect();
+            for (let i = 0; i < 2; i++) {
+              const angle = emitted++ * 2.4;
+              const mote = document.createElement('span');
+              mote.className = 'soul-mote';
+              mote.setAttribute('aria-hidden', 'true');
+              Object.assign(mote.style, { left: `${box.x + box.width / 2 + Math.sin(angle) * 5}px`, top: `${box.y + box.height / 2 + Math.cos(angle) * 5}px` });
+              document.body.append(mote);
+              feedbackMotes.add(mote);
+              const fade = mote.animate([
+                { opacity: failed ? .25 : .65, transform: `scale(${i ? .5 : 1})`, filter: 'blur(.5px)' },
+                { opacity: 0, transform: `translate(${Math.sin(angle) * 9}px, ${Math.cos(angle) * 9}px) scale(.15)`, filter: 'blur(2px)' }
+              ], { duration: 650, easing: 'ease-out', fill: 'forwards' });
+              const remove = () => { mote.remove(); feedbackMotes.delete(mote); };
+              fade.finished.then(remove, remove);
+            }
+          }
+          feedbackEmitter = requestAnimationFrame(emit);
+        };
+        feedbackEmitter = requestAnimationFrame(emit);
+        animation.finished.then(reveal, () => {});
+      }, failed ? 400 : 700);
+    }
+
+    function bindSeal(source = $('sealHit')) {
       const ids = slots.filter(Boolean);
       const index = abilities.indexOf(null);
       if (index < 0 || !analyzeCombination(ids).valid || ids.some(id => reservedIds().includes(id))) return;
+      const from = source.getBoundingClientRect();
+      const icon = document.documentElement.dataset.theme === 'artifact' ? sealIcon(ids) : compositionIcon(ids);
       abilities[index] = [...ids];
+      arrivingAbilities.add(index);
       slots = [null, null, null];
       setMessage('cycleNote');
       stopVoices();
@@ -1904,16 +2073,39 @@
       setMessage('announcement', 'ability.saved', () => ({ name: document.documentElement.dataset.theme === 'artifact'
         ? abilityInfo(ids).label : `${kindNames[analyzeCombination(ids).kind]} · ${fractionText(totalThirds(ids))} e` }));
       card.focus({ preventScroll: pointerFocus });
+      playPanelSound('bind');
+      flyTo(icon, 'seal-flight', from, card.querySelector('.seal-icon').getBoundingClientRect(), () => {
+        arrivingAbilities.delete(index);
+        $('abilityBar').querySelector(`[data-ability="${index}"]`)?.classList.remove('arriving');
+      });
     }
 
     function releaseAbility(index = null) {
-      const ids = index === null ? reservedIds() : abilities[index];
+      finishTransfers();
+      const ids = index === null ? abilities.filter(Boolean).flat() : abilities[index];
       if (!ids?.length) return;
+      const origins = new Map();
+      abilities.forEach((composition, slot) => {
+        if (composition && (index === null || index === slot)) {
+          const from = $('abilityBar').querySelector(`[data-ability="${slot}"] .seal-icon`).getBoundingClientRect();
+          composition.forEach(id => { origins.set(id, from); returningIds.add(id); });
+        }
+      });
       if (index === null) abilities.fill(null);
       else abilities[index] = null;
       render();
+      playPanelSound('release');
       setMessage('announcement', `ability.returned.${document.documentElement.dataset.theme}`, { count: ids.length });
-      document.querySelector(`.piece[data-id="${ids[0]}"]`).focus({ preventScroll: pointerFocus });
+      const focusAfterReturn = document.activeElement;
+      ids.forEach(id => {
+        const target = document.querySelector(`.piece[data-id="${id}"]`);
+        flyTo(runeHTML(byId[id]), `stone-flight return-flight ${byId[id].color}`, origins.get(id), target.querySelector('.rune').getBoundingClientRect(), () => {
+          returningIds.delete(id);
+          renderSlots();
+          if (id === ids[0] && document.activeElement === focusAfterReturn) target.focus({ preventScroll: pointerFocus });
+          clearPreview();
+        });
+      });
       clearPreview();
     }
 
@@ -2000,8 +2192,9 @@
         const sign = piece.anti ? -1 : 1;
         const socket = $('slots').querySelector(`[data-piece="${piece.id}"] .socket-face`).getBoundingClientRect();
         const { x, y } = new DOMPoint(socket.x + socket.width / 2, socket.y + socket.height / 2).matrixTransform(screenToField);
+        const inset = 30 * (Math.abs(piece.charge) === 2 ? 1 : .57);
         return { glow: $('strands').children[index * 2], element: $('strands').children[index * 2 + 1], index,
-          anchor: { x: x - vectors[piece.color].x * sign * 30, y: y - vectors[piece.color].y * sign * 30 } };
+          anchor: { x: x - vectors[piece.color].x * sign * inset, y: y - vectors[piece.color].y * sign * inset } };
       });
       const charge = totalThirds();
       const radius = 35 + Math.abs(charge) * 2;
@@ -2030,11 +2223,17 @@
       $('stateName').textContent = result.valid ? kindNames[result.kind] : '';
       $('stateName').hidden = !result.valid;
       const info = result.valid ? abilityInfo(slots.filter(Boolean)) : null;
-      $('abilityPreview').innerHTML = info ? sealIcon(slots.filter(Boolean)) : '';
-      $('abilityName').textContent = info ? t(`action.${info.action.id}.${info.small ? 'smallSeal' : 'seal'}`) : t('ability.empty');
-      $('abilityDetail').textContent = info ? info.detail : t('ability.hint');
+      const failed = !result.valid && slots.every(Boolean) && document.documentElement.dataset.theme === 'artifact';
+      $('readout').dataset.failed = String(failed);
+      // Preserve the failed emblem during text refreshes so its one-shot animation cannot restart.
+      if (!failed || !$('abilityPreview').querySelector('.failed-seal')) $('abilityPreview').innerHTML = info ? sealIcon(slots.filter(Boolean)) : failed ? failedSealIcon() : '';
+      $('compositionPreview').innerHTML = info ? compositionIcon(slots.filter(Boolean)) : '';
+      $('compositionPreview').hidden = !info;
+      $('abilityName').textContent = info ? t(`action.${info.action.id}.${info.small ? 'smallSeal' : 'seal'}`) : t(failed ? 'ability.failed' : slots.some(Boolean) ? 'ability.incomplete' : 'ability.empty');
+      $('abilityDetail').textContent = info ? info.detail : t(failed ? 'ability.retry' : 'ability.hint');
       const count = slots.filter(Boolean).length;
       $('actionScale').dataset.ready = String(result.valid);
+      $('readout').dataset.unbalancedFull = String(count === 3 && Math.hypot(colorVector().x, colorVector().y) > .001);
       $('actionSteps').innerHTML = actions.map((action, index) => `<li class="action-step"${info?.action.id === action.id ? ' aria-current="true"' : ''}><span class="action-value">${fractionText((index - 2) * 3)}</span> <span class="action-name">${escapeHTML(action.name)}</span></li>`).join('');
       $('actionMarker').hidden = $('actionFill').hidden = count === 0;
       $('actionMarker').style.top = `${pct}%`;
@@ -2052,7 +2251,7 @@
     }
 
     function showPreview(id) {
-      if (!slots.includes(null) || slots.includes(id) || reservedIds().includes(id)) return clearPreview();
+      if (!byId[id] || !slots.includes(null) || occupiedAxis(id) || reservedIds().includes(id)) return clearPreview();
       const future = [...slots];
       future[future.indexOf(null)] = id;
       const vector = colorVector(future);
@@ -2085,6 +2284,7 @@
     }
 
     function render({ audible = false, added = null, localeOnly = false } = {}) {
+      if (!localeOnly) cancelResultFeedback();
       hideTooltip();
       clearPreview();
       if (audible) stopVoices();
@@ -2094,11 +2294,17 @@
       const state = !count ? 'empty' : result.valid ? 'balanced' : 'seeking';
       $('chamber').dataset.state = state;
       const artifact = document.documentElement.dataset.theme === 'artifact';
-      $('resultTitle').textContent = !count ? t('result.empty.artifact') : result.valid ? abilityInfo(slots.filter(Boolean)).label : t('ability.empty');
+      const failed = artifact && count === 3 && !result.valid;
+      $('resultTitle').dataset.unbalancedFull = String(count === 3 && !result.valid);
+      $('resultTitle').textContent = !count ? t('result.empty.artifact') : result.valid ? abilityInfo(slots.filter(Boolean)).label : t('ability.incomplete');
       $('resultDetail').textContent = t(!count ? 'result.hint.artifact' : result.valid ? (count === 2 ? 'result.smallComplete' : 'result.largeComplete') : count === 1 ? 'result.one' : count === 2 ? 'result.two' : 'result.three');
       if (!artifact) {
         $('resultTitle').textContent = !count ? t('result.empty.instrument') : result.valid ? kindNames[result.kind] : t('result.seeking.instrument');
         $('resultDetail').textContent = !count ? t('result.hint.instrument') : t('result.components', { count, charge: fractionText(n) });
+      }
+      if (failed) {
+        $('resultTitle').textContent = t('ability.failed');
+        $('resultDetail').textContent = t('ability.retry');
       }
       $('physicalResult').textContent = result.valid ? t('science.result', { kind: kindNames[result.kind], analog: result.analog, charge: fractionText(n) }) : t(!count ? 'science.intro' : 'science.seeking');
       $('fieldDescription').textContent = [t(`field.count.${artifact ? 'artifact' : 'instrument'}`, { count }),
@@ -2113,18 +2319,33 @@
       const key = slots.filter(Boolean).slice().sort().join('|');
       clearTimeout(arrivalTimer);
       $('chamber').classList.remove('arrived');
+      $('readout').classList.remove('arrived');
+      $('chamber').classList.remove('failed-pulse');
+      $('readout').classList.remove('failed-pulse');
       if (result.valid && key !== previousKey) {
         void $('chamber').offsetWidth;
         $('chamber').classList.add('arrived');
-        arrivalTimer = setTimeout(() => $('chamber').classList.remove('arrived'), 1000);
+        if (artifact) sendResultFeedback(false, audible);
+        else $('readout').classList.add('arrived');
+        arrivalTimer = setTimeout(() => {
+          $('chamber').classList.remove('arrived');
+          if (!artifact) $('readout').classList.remove('arrived');
+        }, 1000);
         if (audible && artifact) playSound(result);
+      } else if (failed && key !== previousKey) {
+        void $('readout').offsetWidth;
+        $('chamber').classList.add('failed-pulse');
+        sendResultFeedback(true, audible);
+        arrivalTimer = setTimeout(() => {
+          $('chamber').classList.remove('failed-pulse');
+        }, 650);
       } else if (audible && added && artifact) playSound(null, added);
       syncStringSound();
       previousKey = key;
     }
 
     function addPiece(id) {
-      if (!byId[id] || slots.includes(id) || reservedIds().includes(id)) return;
+      if (!byId[id] || occupiedAxis(id) || reservedIds().includes(id)) return;
       const index = slots.indexOf(null);
       if (index < 0) {
         setMessage('announcement', `slots.full.${document.documentElement.dataset.theme}`);
@@ -2150,23 +2371,39 @@
       render({ audible: true });
       const returned = document.querySelector(`.piece[data-id="${removed}"]`);
       returned.focus({ preventScroll: true });
+      playPanelSound('release');
       animateTransfer(byId[removed], from, returned.querySelector('.rune').getBoundingClientRect());
       clearPreview();
     }
 
     function animateTransfer(piece, from, to) {
-      if (motionPreference.matches) return;
+      flyTo(runeHTML(piece), `stone-flight ${piece.color}`, from, to);
+    }
+
+    function finishTransfers() {
+      [...transfers].forEach(finish => finish());
+    }
+
+    function flyTo(icon, className, from, to, onFinish = () => {}) {
+      if (motionPreference.matches || document.hidden || !from.width || !to.width) { onFinish(); return; }
       const flight = document.createElement('span');
-      flight.className = `stone-flight ${piece.color}`;
+      flight.className = className;
       flight.setAttribute('aria-hidden', 'true');
-      flight.innerHTML = runeHTML(piece);
+      flight.innerHTML = icon;
       Object.assign(flight.style, { left: `${from.x}px`, top: `${from.y}px`, width: `${from.width}px`, height: `${from.height}px` });
       document.body.append(flight);
       const animation = flight.animate([
         { transform: 'translate(0, 0) scale(1)', opacity: 1 },
-        { transform: `translate(${to.x - from.x}px, ${to.y - from.y}px) scale(${to.width / from.width}, ${to.height / from.height})`, opacity: 0 }
+        { transform: `translate(${to.x - from.x}px, ${to.y - from.y}px) scale(${to.width / from.width}, ${to.height / from.height})`, opacity: 1 }
       ], { duration: 420, easing: 'cubic-bezier(.2,.75,.2,1)' });
-      animation.finished.then(() => flight.remove(), () => flight.remove());
+      const finish = () => {
+        if (!transfers.delete(finish)) return;
+        animation.cancel();
+        flight.remove();
+        onFinish();
+      };
+      transfers.add(finish);
+      animation.finished.then(finish, finish);
     }
 
     function availableRecipes(count) {
@@ -2187,6 +2424,7 @@
 
     function setRecipe(ids) {
       if (!Array.isArray(ids) || ids.length < 2 || ids.length > 3 || new Set(ids).size !== ids.length || ids.some(id => !byId[id] || reservedIds().includes(id))) return;
+      if (ids.some((id, index) => occupiedAxis(id, ids.slice(0, index)))) return;
       slots = [...ids];
       while (slots.length < 3) slots.push(null);
       setMessage('cycleNote', document.documentElement.dataset.theme === 'artifact' ? (ids.length === 2 ? 'examples.randomPair' : 'examples.randomTriple') : 'examples.randomComposition', { count: ids.length });
@@ -2276,22 +2514,22 @@
       });
     }
 
-    function playSound(result, piece) {
+    function playSound(result, piece, failed = false) {
       const engine = ensureAudio();
       if (!engine) return;
       const { context, master } = engine;
       const artifact = document.documentElement.dataset.theme === 'artifact';
-      const base = result ? 174.61 * Math.pow(2, totalThirds() / 18) * (result.kind === 'antibaryon' ? .75 : 1) : [220, 261.63, 329.63][colors.indexOf(piece.color)] * (piece.anti ? .75 : 1);
-      const notes = result ? (result.kind === 'meson' ? [1, 1.5, 2] : [1, 1.2, 1.5, 2]) : [1];
+      const base = failed ? 196 : result ? 174.61 * Math.pow(2, totalThirds() / 18) * (result.kind === 'antibaryon' ? .75 : 1) : [220, 261.63, 329.63][colors.indexOf(piece.color)] * (piece.anti ? .75 : 1);
+      const notes = failed ? [1, 1.06] : result ? (result.kind === 'meson' ? [1, 1.5, 2] : [1, 1.2, 1.5, 2]) : [1];
       notes.forEach((ratio, index) => {
         const oscillator = context.createOscillator();
         const gain = context.createGain();
         const start = context.currentTime + .01 + index * (artifact ? .055 : .035);
-        const duration = result ? (artifact ? 1.6 : .9) : .35;
+        const duration = failed ? .45 : result ? (artifact ? 1.6 : .9) : .35;
         oscillator.type = artifact && index === 0 ? 'triangle' : 'sine';
         oscillator.frequency.setValueAtTime(base * ratio, start);
         gain.gain.setValueAtTime(0, start);
-        gain.gain.linearRampToValueAtTime(result ? .12 : .09, start + .025);
+        gain.gain.linearRampToValueAtTime(failed ? .055 : result ? .12 : .09, start + .025);
         gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
         oscillator.connect(gain);
         gain.connect(master);
@@ -2301,6 +2539,51 @@
         oscillator.stop(start + duration + .05);
         oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); audio.voices.delete(voice); };
       });
+    }
+
+    function playPanelSound(action) {
+      if (document.hidden) return;
+      const engine = ensureAudio();
+      if (!engine) return;
+      const { context, master, voices } = engine;
+      const now = context.currentTime;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(action === 'bind' ? 440 : 392, now);
+      oscillator.frequency.exponentialRampToValueAtTime(action === 'bind' ? 660 : 261.63, now + .18);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(.055, now + .015);
+      gain.gain.exponentialRampToValueAtTime(.0001, now + .28);
+      oscillator.connect(gain);
+      gain.connect(master);
+      const voice = { oscillator, gain };
+      voices.add(voice);
+      oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); voices.delete(voice); };
+      oscillator.start(now);
+      oscillator.stop(now + .3);
+    }
+
+    function fitResultCopy() {
+      const copy = $('resultCopy');
+      if (!copy.getBoundingClientRect().width) return;
+      const name = $('abilityName').textContent;
+      const detail = $('abilityDetail').textContent;
+      const variants = [[t('ability.empty'), t('ability.hint')], [t('ability.incomplete'), t('ability.hint')], [t('ability.failed'), t('ability.retry')]];
+      actions.forEach(action => {
+        variants.push([t(`action.${action.id}.seal`), action.detail]);
+        if (action.smallDetail) variants.push([t(`action.${action.id}.smallSeal`), action.smallDetail]);
+      });
+      copy.style.minHeight = '';
+      let height = 0;
+      for (const [title, description] of variants) {
+        $('abilityName').textContent = title;
+        $('abilityDetail').textContent = description;
+        height = Math.max(height, copy.offsetHeight);
+      }
+      $('abilityName').textContent = name;
+      $('abilityDetail').textContent = detail;
+      copy.style.minHeight = `${Math.ceil(height)}px`;
     }
 
     function renderLabels() {
@@ -2318,9 +2601,18 @@
       $('slots').setAttribute('aria-label', t(`slots.${theme}`));
       $('toggleSound').setAttribute('aria-label', t(soundEnabled ? 'sound.onLabel' : 'sound.offLabel'));
       $('soundLabel').textContent = t(soundEnabled ? 'sound.on' : 'sound.off');
+      fitResultCopy();
+      document.querySelectorAll('.manuscript-inscription').forEach(text => {
+        text.style.removeProperty('font-size');
+        const label = text.querySelector('textPath');
+        const available = document.querySelector(label.getAttribute('href')).getTotalLength() - 4;
+        const length = text.getComputedTextLength();
+        if (length > available) text.style.fontSize = `${parseFloat(getComputedStyle(text).fontSize) * available / length}px`;
+      });
     }
 
     function renderLanguage() {
+      finishTransfers();
       const selectorFor = node => {
         if (!node) return null;
         if (node.id) return `#${CSS.escape(node.id)}`;
@@ -2340,6 +2632,7 @@
     }
 
     function setTheme(theme) {
+      finishTransfers();
       stopVoices();
       document.documentElement.dataset.theme = theme;
       renderLabels();
@@ -2349,9 +2642,12 @@
     }
 
     function fitWorkspace() {
+      cancelResultFeedback();
+      finishTransfers();
       // Enlarge the whole instrument together, bounded by both viewport dimensions.
       const scale = Math.max(1, Math.min(innerWidth / 1440, innerHeight / 1024, 2.4));
       document.documentElement.style.setProperty('--workspace-scale', String(scale));
+      fitResultCopy();
       if (strandElements.length) renderField(analyzeCombination());
     }
 
@@ -2412,6 +2708,8 @@
     });
     window.addEventListener('scroll', event => {
       if (event.target === $('runeTooltip')) return;
+      cancelResultFeedback();
+      finishTransfers();
       cancelPress();
       // Scrolling a focused card into view must not dismiss its freshly opened composition.
       if (tooltipTarget?.matches('.ability-card') && document.activeElement === tooltipTarget) showTooltip(tooltipTarget);
@@ -2443,7 +2741,8 @@
     $('slots').addEventListener('focusout', clearPreview);
     $('next2').addEventListener('click', () => randomRecipe(2));
     $('next3').addEventListener('click', () => randomRecipe(3));
-    $('bindSeal').addEventListener('click', bindSeal);
+    $('bindSeal').addEventListener('click', () => bindSeal());
+    for (const id of ['sealHit', 'abilityPreview', 'compositionPreview']) $(id).addEventListener('click', () => bindSeal($(id)));
     $('releaseAll').addEventListener('click', () => releaseAbility());
     $('abilityBar').addEventListener('click', event => {
       const button = event.target.closest('[data-release]');
@@ -2454,6 +2753,7 @@
       }
     });
     $('reset').addEventListener('click', () => {
+      finishTransfers();
       slots = [null, null, null];
       document.querySelectorAll('.stone-flight').forEach(node => node.remove());
       setMessage('cycleNote');
@@ -2479,6 +2779,8 @@
     });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
+        cancelResultFeedback();
+        finishTransfers();
         if (frame) cancelAnimationFrame(frame);
         frame = 0;
         stopVoices();
@@ -2490,6 +2792,8 @@
       }
     });
     motionPreference.addEventListener('change', () => {
+      if (motionPreference.matches) cancelResultFeedback();
+      if (motionPreference.matches) finishTransfers();
       if (frame) cancelAnimationFrame(frame);
       animateField(performance.now());
     });
